@@ -71,30 +71,43 @@ flowchart TD
 
 ---
 
-## 🔬 Mathematical Scoring & Hybrid HRV Fallback
+## 👻 Flagship Feature: "Ghost Take" Comparative Biometrics
 
-SmartSpectra's autonomic HRV metrics (RMSSD & SDNN) require a 60-second rolling window before statistical confidence reaches validation. To prevent 30-to-45-second practice pitches from failing or reporting `0%`, PitchPulse features a **two-phase hybrid composure engine**:
+PitchPulse solves the single biggest problem with conventional speech coaching: **speakers cannot look at dials while speaking, and single-session numbers don't show real progress.**
 
-* **Phase 1 ($t < 60\text{s}$)**: Composure is computed dynamically via:
-  $$\text{Composure} = 0.40 \times \text{PulseStability} + 0.30 \times \text{BreathingCadence} + 0.30 \times \text{FacialCalm}$$
-* **Phase 2 ($t \ge 60\text{s}$)**: As HRV confidence is achieved, RMSSD is smoothly blended in, unlocking the **`✨ Deep HRV Lock Acquired`** badge.
+1. **Take 1 (Baseline / Raw Run):** The speaker practices their raw pitch. PitchPulse records their full physiological flight log (heart rate spikes, gaze drops, breath-holds).
+2. **Take 2 (Ghost Mode Re-pitch):** The speaker clicks **"Practice Again (Ghost Mode)"**. PitchPulse renders Take 1's pulse wave as a subtle, semi-transparent **violet dashed Ghost Curve** directly behind the live solid cyan waveform!
+3. **Before & After Performance Delta Scorecard:** The Replay flight recorder generates a side-by-side comparative report:
+   * **Heart Rate Delta:** (e.g. `92 BPM → 76 BPM`, **-16 BPM calmer**)
+   * **Audience Eye Focus:** (e.g. `58% → 84%`, **+26% engagement**)
+   * **Breathing Freezes:** (e.g. `3 episodes → 0 episodes`)
+   * **Net Physiological Regulation Gain:** Quantifiable improvement score (e.g. **+28% regulation index**)
 
-### Weighted Composite Score Breakdown:
-* **Audience Eye Contact (25%)**: Percentage of time iris landmarks remain aligned with the camera reticle.
-* **Composure & Autonomic Balance (25%)**: Steady pulse equilibrium and autonomic HRV coherence.
-* **Speaking Pace & Rhythm (20%)**: Target 60–80% speech ratio with strategic breathing pauses.
-* **Breath Control (15%)**: Rhythm stability and detection of unconscious breath-holding.
-* **Expression Dynamics (10%)**: Ratio of composed/warm expressions vs. strain/tension.
-* **Blink Naturalness (5%)**: Flags freezing/staring ($<8/\text{min}$) or rapid fluttering ($>28/\text{min}$).
+---
+
+## 🔬 Model-Card Compliance & Scientific Rigor
+
+* **Talking-Gated Breathing:** Optical rPPG respiratory estimations are confounded by jaw and torso movements while speaking. PitchPulse strictly respects SmartSpectra's model card guidelines by automatically gating respiratory calculations when `isSpeaking === true`, displaying `[🎙️ Speech Gated]` and locking the baseline trace rather than plotting motion noise.
+* **HRV Warm-up Fallback:** Autonomic RMSSD & SDNN require 60 seconds before statistical confidence is reached. PitchPulse implements a two-phase hybrid composure fallback:
+  $$\text{Live Composure} = 0.40 \times \text{PulseStability} + 0.30 \times \text{BreathStability} + 0.30 \times \text{FacialCalm}$$
+  Once $t \ge 60\text{s}$ and confidence is confirmed, RMSSD is smoothly integrated into the Composure score with a `✨ Deep HRV Lock Acquired` badge.
 
 ---
 
 ## 🛡️ Camera Consent & Data Handling
 
 * **100% Local Frame Processing**: Video frames captured from `getUserMedia` are processed in memory by the local SmartSpectra native runtime. **No video frames or raw facial images are ever recorded to disk or transmitted across the internet.**
+* **Zero-Egress SDK Telemetry Toggle**: PitchPulse includes an explicit in-app toggle in the Consent Screen for `enableTelemetry`. When disabled (default), the SDK runtime runs with `enableTelemetry: false`, ensuring zero diagnostics or telemetry ever leave your machine.
 * **Local Telemetry Retention**: Only mathematical telemetry points (e.g., heart rate integers, timestamps) are stored locally in the application's local user data directory (`pitchpulse_sessions/`) for session review. Users can delete any session at any time with one click.
 * **Zero External Cloud AI**: PitchPulse does not forward biometric telemetry to third-party LLMs or cloud endpoints.
 * **Non-Medical Wellness Scope**: PitchPulse is an educational practice tool for presentation training. It does not provide medical diagnosis, treatment, or clinical monitoring.
+
+---
+
+## 🏆 DEV Challenge Prize Categories Entered
+
+* **Best Thoughtful Real-World Use:** Presentation & interview anxiety affects over 75% of professionals and students. PitchPulse provides an on-device, private, contactless biometric biofeedback loop to build physiological composure and authentic stage presence.
+* **Most Creative or Delightful Use:** The "Ghost Take" feature borrows the beloved racing ghost mechanic from games like Mario Kart and translates it into high-stakes presentation coaching, transforming abstract heart rate numbers into an intuitive visual challenge.
 
 ---
 
