@@ -8,6 +8,9 @@ export default function App() {
   const [hasConsented, setHasConsented] = useState(() => {
     return localStorage.getItem('pitchpulse_consent') === 'true';
   });
+  const [enableTelemetry, setEnableTelemetry] = useState(() => {
+    return localStorage.getItem('pitchpulse_telemetry') === 'true';
+  });
   const [apiKey, setApiKey] = useState('');
   const [currentView, setCurrentView] = useState('studio'); // 'studio' | 'replay' | 'history'
   const [activeSession, setActiveSession] = useState(null);
@@ -22,10 +25,12 @@ export default function App() {
     loadKey();
   }, []);
 
-  const handleConsentAccept = (key) => {
+  const handleConsentAccept = (key, telemetry = false) => {
     localStorage.setItem('pitchpulse_consent', 'true');
+    localStorage.setItem('pitchpulse_telemetry', String(telemetry));
     setHasConsented(true);
     if (key) setApiKey(key);
+    setEnableTelemetry(telemetry);
   };
 
   const handleFinishSession = (sessionData) => {
@@ -44,12 +49,14 @@ export default function App() {
         <ConsentScreen
           onAccept={handleConsentAccept}
           savedApiKey={apiKey}
+          initialTelemetry={enableTelemetry}
         />
       )}
 
       {currentView === 'studio' && (
         <SessionScreen
           apiKey={apiKey}
+          enableTelemetry={enableTelemetry}
           onFinishSession={handleFinishSession}
           onOpenHistory={() => setCurrentView('history')}
           onOpenSettings={() => setHasConsented(false)}

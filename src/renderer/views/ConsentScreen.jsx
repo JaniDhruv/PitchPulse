@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { ShieldCheck, Camera, HardDrive, Key, CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
 import { CONSENT_POLICY } from '../lib/constants';
 
-export default function ConsentScreen({ onAccept, savedApiKey = '' }) {
+export default function ConsentScreen({ onAccept, savedApiKey = '', initialTelemetry = false }) {
   const [apiKey, setApiKey] = useState(savedApiKey);
+  const [enableTelemetry, setEnableTelemetry] = useState(initialTelemetry);
   const [hasAgreed, setHasAgreed] = useState(false);
   const [isSavingKey, setIsSavingKey] = useState(false);
 
@@ -14,7 +15,7 @@ export default function ConsentScreen({ onAccept, savedApiKey = '' }) {
       await window.pitchPulseAPI.saveApiKey(apiKey);
       setIsSavingKey(false);
     }
-    onAccept(apiKey);
+    onAccept(apiKey, enableTelemetry);
   };
 
   return (
@@ -83,6 +84,25 @@ export default function ConsentScreen({ onAccept, savedApiKey = '' }) {
           <p className="text-[11px] text-slate-500 mt-1.5">
             Your key stays local on your machine and is loaded by the native SDK runtime.
           </p>
+        </div>
+
+        {/* Telemetry Privacy Toggle */}
+        <div className="mb-6 p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="telemetry-toggle"
+            checked={enableTelemetry}
+            onChange={(e) => setEnableTelemetry(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0 cursor-pointer"
+          />
+          <label htmlFor="telemetry-toggle" className="text-xs text-slate-300 cursor-pointer select-none">
+            <span className="font-semibold text-slate-200 block mb-0.5">
+              Allow Anonymous SDK Telemetry ({enableTelemetry ? 'Enabled' : 'Disabled — Zero Egress'})
+            </span>
+            <span className="text-slate-400 leading-relaxed block">
+              When disabled, PitchPulse configures the SmartSpectra SDK with <code className="text-sky-300 bg-slate-900 px-1 rounded">enableTelemetry: false</code>. Absolutely no diagnostics or metadata leave your local device.
+            </span>
+          </label>
         </div>
 
         {/* Consent Checkbox */}

@@ -35,6 +35,7 @@ async function getSdkModules() {
 
 export default function SessionScreen({
   apiKey,
+  enableTelemetry = false,
   onFinishSession,
   onOpenHistory,
   onOpenSettings,
@@ -91,6 +92,7 @@ export default function SessionScreen({
             const { SmartSpectraSDK, cardioMetrics, breathingMetrics, faceMetrics, decodeMetrics } = modules;
             const sdk = new SmartSpectraSDK({
               apiKey,
+              enableTelemetry: Boolean(enableTelemetry),
               requestedMetrics: [...cardioMetrics, ...breathingMetrics, ...faceMetrics],
             });
             sdkInstanceRef.current = sdk;
