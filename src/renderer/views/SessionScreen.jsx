@@ -80,6 +80,18 @@ export default function SessionScreen({
   const lastTalkingTimeRef = useRef(Date.now());
   const breathHoldTimerRef = useRef(0);
 
+  // Mutable ref to current metrics to avoid interval tearing & stale closures
+  const latestMetricsRef = useRef({
+    liveBpm: 74,
+    liveBreathRate: 15,
+    liveComposure: 82,
+    eyeContactScore: 88,
+    isSpeaking: false,
+    currentExpression: 'neutral',
+    rmssd: 0,
+    hrvConfidence: 0,
+  });
+
   // Initialize SmartSpectra SDK or Fallback Simulation
   useEffect(() => {
     let isCancelled = false;
@@ -173,6 +185,10 @@ export default function SessionScreen({
       setLiveComposure(82);
       setEyeContactScore(88);
       setIsGazeCentered(true);
+
+      latestMetricsRef.current.liveBpm = simBpm;
+      latestMetricsRef.current.liveBreathRate = 15;
+      latestMetricsRef.current.eyeContactScore = 88;
     }, 33); // ~30Hz
   };
 
@@ -182,7 +198,11 @@ export default function SessionScreen({
     if (metrics.cardio) {
       if (metrics.cardio.pulseRate?.length > 0) {
         const last = metrics.cardio.pulseRate[metrics.cardio.pulseRate.length - 1];
-        if (last?.value) setLiveBpm(Math.round(last.value));
+        if (last?.value) {
+          const bpm = Math.round(last.value);
+          setLiveBpm(bpm);
+          latestMetricsRef.current.liveBpm = bpm;
+        }
       }
       if (metrics.cardio.arterialPressureTrace?.length > 0) {
         metrics.cardio.arterialPressureTrace.forEach(pt => {
@@ -193,17 +213,23 @@ export default function SessionScreen({
         });
       }
       if (metrics.cardio.hrv?.length > 0) {
-        const hrvVal = metrics.cardio.hrv[metrics.cardio.hrv.length - 1]?.value;
-        if (hrvVal) setIsHrvLocked(true);
+        const lastHrv = metrics.cardio.hrv[metrics.cardio.hrv.length - 1];
+        if (lastHrv?.value) {
+          latestMetricsRef.current.rmssd = lastHrv.value;
+          latestMetricsRef.current.hrvConfidence = lastHrv.confidence || 50;
+          setIsHrvLocked(true);
+        }
       }
     }
 
     // 2. Breathing (Talking-gated to respect optical rPPG model card constraints)
     if (metrics.breathing) {
-      if (metrics.breathing.rate?.length > 0 && !isSpeaking) {
+      if (metrics.breathing.rate?.length > 0 && !latestMetricsRef.current.isSpeaking) {
         const lastB = metrics.breathing.rate[metrics.breathing.rate.length - 1];
         if (lastB?.value && (lastB.confidence == null || lastB.confidence >= 35)) {
-          setLiveBreathRate(Math.round(lastB.value));
+          const br = Math.round(lastB.value);
+          setLiveBreathRate(br);
+          latestMetricsRef.current.liveBreathRate = br;
         }
       }
       if (metrics.breathing.upperTrace?.length > 0) {
@@ -221,37 +247,99 @@ export default function SessionScreen({
       if (metrics.face.talking?.length > 0) {
         const isTalk = Boolean(metrics.face.talking[metrics.face.talking.length - 1]?.detected);
         setIsSpeaking(isTalk);
+        latestMetricsRef.current.isSpeaking = isTalk;
       }
       if (metrics.face.expression?.length > 0) {
         const exp = metrics.face.expression[metrics.face.expression.length - 1];
-        if (exp?.category) setCurrentExpression(exp.category);
+        if (exp?.category) {
+          setCurrentExpression(exp.category);
+          latestMetricsRef.current.currentExpression = exp.category;
+        }
+      }
+      if (metrics.face.blink?.length > 0) {
+        const blink = metrics.face.blink[metrics.face.blink.length - 1];
+        if (blink?.detected) {
+          sessionDataRef.current.blinkEvents.push({ detected: true, timeSec: recordDurationSec });
+        }
       }
       if (metrics.face.landmarks?.length > 0) {
         const eyeRes = calculateEyeContactScore(metrics.face.landmarks);
         setEyeContactScore(eyeRes.score);
+        latestMetricsRef.current.eyeContactScore = eyeRes.score;
         setIsGazeCentered(eyeRes.isCentered);
         setGazeOffset(eyeRes.gazeOffset);
       }
     }
   };
 
-  // Recording timer
+  // Recording timer with ref-based metrics synchronization
   useEffect(() => {
     let timer = null;
     if (isRecording) {
       timer = setInterval(() => {
-        setRecordDurationSec((s) => s + 1);
+        setRecordDurationSec((s) => {
+          const newSec = s + 1;
+          const current = latestMetricsRef.current;
 
-        // Record samples into session accumulator
-        sessionDataRef.current.pulseSamples.push({ value: liveBpm, timeSec: recordDurationSec });
-        sessionDataRef.current.breathingSamples.push({ value: liveBreathRate, timeSec: recordDurationSec });
-        sessionDataRef.current.eyeContactScores.push(eyeContactScore);
-        sessionDataRef.current.speakingEvents.push({ talking: isSpeaking, timeSec: recordDurationSec });
-        sessionDataRef.current.expressionHistory.push({ category: currentExpression, timeSec: recordDurationSec });
+          // Record samples into session accumulator
+          sessionDataRef.current.pulseSamples.push({ value: current.liveBpm, timeSec: newSec });
+          sessionDataRef.current.breathingSamples.push({ value: current.liveBreathRate, timeSec: newSec });
+          sessionDataRef.current.eyeContactScores.push(current.eyeContactScore);
+          sessionDataRef.current.speakingEvents.push({ talking: current.isSpeaking, timeSec: newSec });
+          sessionDataRef.current.expressionHistory.push({ category: current.currentExpression, timeSec: newSec });
+          if (current.rmssd > 0) {
+            sessionDataRef.current.hrvSamples.push(current.rmssd);
+          }
+
+          // Dynamic talk ratio calculation
+          const events = sessionDataRef.current.speakingEvents;
+          const talkCount = events.filter(e => e.talking).length;
+          if (events.length > 0) {
+            setTalkRatio(Math.round((talkCount / events.length) * 100));
+          }
+
+          // Breath holding detection (flat breathing trace for > 6s while not speaking)
+          const bBuffer = breathingBufferRef.current;
+          if (bBuffer.length >= 30 && !current.isSpeaking) {
+            const recent = bBuffer.slice(-30);
+            const min = Math.min(...recent);
+            const max = Math.max(...recent);
+            if ((max - min) < 0.08) {
+              breathHoldTimerRef.current += 1;
+              if (breathHoldTimerRef.current >= 5) {
+                setIsBreathHolding(true);
+              }
+            } else {
+              breathHoldTimerRef.current = 0;
+              setIsBreathHolding(false);
+            }
+          } else {
+            breathHoldTimerRef.current = 0;
+            setIsBreathHolding(false);
+          }
+
+          // Dynamic Live Composure calculation with HRV warm-up fallback
+          const pulseHistory = sessionDataRef.current.pulseSamples.map(p => p.value);
+          const compResult = calculateLiveComposure({
+            pulseRate: current.liveBpm,
+            pulseHistory,
+            breathingRate: current.liveBreathRate,
+            expressions: { [current.currentExpression]: 1 },
+            rmssd: current.rmssd,
+            hrvConfidence: current.hrvConfidence,
+            durationSec: newSec,
+          });
+          setLiveComposure(compResult.score);
+          if (compResult.isHrvLocked) {
+            setIsHrvLocked(true);
+          }
+
+          return newSec;
+        });
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isRecording, liveBpm, liveBreathRate, eyeContactScore, isSpeaking, currentExpression]);
+  }, [isRecording]);
 
   const handleStartRecording = () => {
     sessionDataRef.current = {
