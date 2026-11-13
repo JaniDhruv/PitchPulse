@@ -1,3 +1,6 @@
+// Strip any inherited CLI node execution mode so Electron main process always boots
+delete process.env.ELECTRON_RUN_AS_NODE;
+
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs/promises';
