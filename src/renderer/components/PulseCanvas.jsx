@@ -4,7 +4,13 @@ import React, { useEffect, useRef } from 'react';
  * High-performance 60 FPS HTML5 Canvas for real-time PPG / arterial pulse waveforms.
  * Reads directly from a mutable ring buffer ref without triggering React re-renders.
  */
-export default function PulseCanvas({ bufferRef, isRecording = false, liveBpm = 72 }) {
+export default function PulseCanvas({
+  bufferRef,
+  ghostBufferRef = null,
+  ghostAvgBpm = null,
+  isRecording = false,
+  liveBpm = 72,
+}) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -34,6 +40,38 @@ export default function PulseCanvas({ bufferRef, isRecording = false, liveBpm = 
         ctx.lineTo(width, y);
       }
       ctx.stroke();
+
+      // 1. Draw Ghost Take trace (if active) in translucent violet
+      const ghostBuffer = ghostBufferRef?.current || [];
+      if (ghostBuffer.length > 1) {
+        let gMin = Infinity;
+        let gMax = -Infinity;
+        for (let i = 0; i < ghostBuffer.length; i++) {
+          const val = ghostBuffer[i];
+          if (val < gMin) gMin = val;
+          if (val > gMax) gMax = val;
+        }
+        const gRange = gMax - gMin || 1;
+
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.45)'; // Soft purple
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([4, 4]); // Dashed ghost line
+
+        ctx.beginPath();
+        const gStep = width / (ghostBuffer.length - 1);
+        for (let i = 0; i < ghostBuffer.length; i++) {
+          const x = i * gStep;
+          const normY = (ghostBuffer[i] - gMin) / gRange;
+          const y = height - (normY * (height * 0.7) + height * 0.15);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line for live wave
+      }
 
       const buffer = bufferRef?.current || [];
       if (buffer.length > 1) {
@@ -99,7 +137,7 @@ export default function PulseCanvas({ bufferRef, isRecording = false, liveBpm = 
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [bufferRef]);
+  }, [bufferRef, ghostBufferRef]);
 
   return (
     <div className="relative w-full h-full bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden shadow-inner">
@@ -109,9 +147,19 @@ export default function PulseCanvas({ bufferRef, isRecording = false, liveBpm = 
           Pulse Plethysmogram
         </span>
       </div>
-      <div className="absolute top-2.5 right-3 z-10 flex items-baseline space-x-1">
-        <span className="text-xl font-bold font-mono text-sky-400">{liveBpm || '--'}</span>
-        <span className="text-xs text-slate-400 font-medium">BPM</span>
+
+      <div className="absolute top-2.5 right-3 z-10 flex items-center gap-3">
+        {ghostAvgBpm && (
+          <div className="hidden sm:flex items-baseline space-x-1 px-2 py-0.5 rounded bg-purple-950/80 border border-purple-500/40 text-purple-300 text-[11px]">
+            <span className="font-semibold uppercase tracking-wider text-[10px]">Ghost:</span>
+            <span className="font-bold font-mono text-purple-300">{ghostAvgBpm}</span>
+            <span className="text-[10px] text-purple-400">BPM</span>
+          </div>
+        )}
+        <div className="flex items-baseline space-x-1">
+          <span className="text-xl font-bold font-mono text-sky-400">{liveBpm || '--'}</span>
+          <span className="text-xs text-slate-400 font-medium">BPM</span>
+        </div>
       </div>
       <canvas
         ref={canvasRef}
