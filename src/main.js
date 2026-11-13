@@ -106,16 +106,20 @@ const createWindow = () => {
     },
   });
 
-  // Wire Presage SmartSpectra IPC binding for this window
-  bindSmartSpectraIpc(mainWindow, {
-    logger: (level, msg) => {
-      if (level === 'error') {
-        console.error(`[SmartSpectra IPC] ${msg}`);
-      } else if (process.env.SMARTSPECTRA_DIAGNOSTICS === '1') {
-        console.log(`[SmartSpectra IPC:${level}] ${msg}`);
-      }
-    },
-  });
+  // Wire Presage SmartSpectra IPC binding for this window with defensive fallback
+  try {
+    bindSmartSpectraIpc(mainWindow, {
+      logger: (level, msg) => {
+        if (level === 'error') {
+          console.error(`[SmartSpectra IPC] ${msg}`);
+        } else if (process.env.SMARTSPECTRA_DIAGNOSTICS === '1') {
+          console.log(`[SmartSpectra IPC:${level}] ${msg}`);
+        }
+      },
+    });
+  } catch (err) {
+    console.warn('[SmartSpectra IPC] Native binding uninitialized or deferred:', err.message);
+  }
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
