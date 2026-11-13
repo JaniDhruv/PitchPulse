@@ -198,11 +198,13 @@ export default function SessionScreen({
       }
     }
 
-    // 2. Breathing
+    // 2. Breathing (Talking-gated to respect optical rPPG model card constraints)
     if (metrics.breathing) {
-      if (metrics.breathing.rate?.length > 0) {
+      if (metrics.breathing.rate?.length > 0 && !isSpeaking) {
         const lastB = metrics.breathing.rate[metrics.breathing.rate.length - 1];
-        if (lastB?.value) setLiveBreathRate(Math.round(lastB.value));
+        if (lastB?.value && (lastB.confidence == null || lastB.confidence >= 35)) {
+          setLiveBreathRate(Math.round(lastB.value));
+        }
       }
       if (metrics.breathing.upperTrace?.length > 0) {
         metrics.breathing.upperTrace.forEach(bt => {
@@ -375,6 +377,7 @@ export default function SessionScreen({
                 bufferRef={breathingBufferRef}
                 liveRate={liveBreathRate}
                 isBreathHolding={isBreathHolding}
+                isSpeaking={isSpeaking}
               />
             </div>
           </div>

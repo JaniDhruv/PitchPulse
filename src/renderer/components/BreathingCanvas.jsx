@@ -4,7 +4,12 @@ import React, { useEffect, useRef } from 'react';
  * High-performance 60 FPS HTML5 Canvas for real-time respiratory movement traces.
  * Alerts visually if user holds their breath during speaking segments.
  */
-export default function BreathingCanvas({ bufferRef, isBreathHolding = false, liveRate = 14 }) {
+export default function BreathingCanvas({
+  bufferRef,
+  isBreathHolding = false,
+  liveRate = 14,
+  isSpeaking = false,
+}) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -39,11 +44,16 @@ export default function BreathingCanvas({ bufferRef, isBreathHolding = false, li
         }
         const range = max - min || 1;
 
-        const color = isBreathHolding ? '#f87171' : '#34d399';
+        const color = isBreathHolding ? '#f87171' : (isSpeaking ? '#38bdf8' : '#34d399');
         ctx.shadowColor = color;
         ctx.shadowBlur = 8;
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = isSpeaking ? 1.8 : 2.5;
+        if (isSpeaking) {
+          ctx.setLineDash([4, 4]); // Dashed line during speech phase to signify baseline lock
+        } else {
+          ctx.setLineDash([]);
+        }
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
@@ -92,10 +102,15 @@ export default function BreathingCanvas({ bufferRef, isBreathHolding = false, li
   return (
     <div className={`relative w-full h-full bg-slate-900/90 rounded-xl border ${isBreathHolding ? 'border-red-500/80 shadow-red-500/20' : 'border-slate-800'} overflow-hidden shadow-inner transition-colors duration-300`}>
       <div className="absolute top-2.5 left-3 z-10 flex items-center space-x-2">
-        <span className={`w-2.5 h-2.5 rounded-full ${isBreathHolding ? 'bg-red-500 animate-ping' : 'bg-emerald-400 animate-pulse'}`}></span>
+        <span className={`w-2.5 h-2.5 rounded-full ${isBreathHolding ? 'bg-red-500 animate-ping' : (isSpeaking ? 'bg-sky-400' : 'bg-emerald-400 animate-pulse')}`}></span>
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
           Respiratory Waveform
         </span>
+        {isSpeaking && (
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-950/80 border border-sky-500/40 text-sky-300 font-mono">
+            🎙️ Speech Gated
+          </span>
+        )}
       </div>
       <div className="absolute top-2.5 right-3 z-10 flex items-baseline space-x-1">
         <span className={`text-xl font-bold font-mono ${isBreathHolding ? 'text-red-400' : 'text-emerald-400'}`}>{liveRate || '--'}</span>
