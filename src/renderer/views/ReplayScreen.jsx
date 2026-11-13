@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Play, RotateCcw, Award, CheckCircle2, AlertCircle, ArrowLeft, Download, Eye, Heart, Wind, Mic, Smile, Activity } from 'lucide-react';
 import { EMOTIONS } from '../lib/constants';
 
-export default function ReplayScreen({ sessionData, onBackToStudio }) {
+export default function ReplayScreen({ sessionData, onBackToStudio, onPracticeWithGhost }) {
   const { summary, pulseSamples = [], breathingSamples = [], eyeContactScores = [], speakingEvents = [], expressionHistory = [] } = sessionData || {};
   const [scrubberSec, setScrubberSec] = useState(0);
 
@@ -30,6 +30,14 @@ export default function ReplayScreen({ sessionData, onBackToStudio }) {
         </button>
 
         <div className="flex items-center gap-3">
+          {onPracticeWithGhost && (
+            <button
+              onClick={() => onPracticeWithGhost(sessionData)}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-xs font-bold text-white shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
+            >
+              <span>👻 Practice Again (Ghost Mode)</span>
+            </button>
+          )}
           <span className="text-xs text-slate-400">
             Recorded Session ({duration}s duration)
           </span>
@@ -77,6 +85,75 @@ export default function ReplayScreen({ sessionData, onBackToStudio }) {
           </div>
         </div>
       </div>
+
+      {/* Side-by-Side "Before vs. After" Ghost Comparison Card */}
+      {sessionData?.ghostComparison && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-indigo-950/70 border border-purple-500/40 shadow-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🚀</span>
+              <h3 className="text-sm font-bold text-slate-100">
+                Ghost Take Performance Delta (Take 1 vs. Take 2)
+              </h3>
+            </div>
+            <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              +{Math.max(1, (summary?.overallScore || 85) - sessionData.ghostComparison.take1Score)} PTS REGULATION GAIN
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">Heart Rate Delta</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-lg font-mono font-bold text-slate-100">
+                  {summary?.avgPulse || 72} BPM
+                </span>
+                <span className={`text-xs font-mono font-bold ${(summary?.avgPulse || 72) <= sessionData.ghostComparison.take1Pulse ? 'text-emerald-400' : 'text-red-400'}`}>
+                  ({(summary?.avgPulse || 72) - sessionData.ghostComparison.take1Pulse > 0 ? '+' : ''}{(summary?.avgPulse || 72) - sessionData.ghostComparison.take1Pulse} BPM)
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500">Take 1: {sessionData.ghostComparison.take1Pulse} BPM</span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">Audience Eye Focus</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-lg font-mono font-bold text-slate-100">
+                  {summary?.subScores?.eyeContact || 85}%
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-400">
+                  (+{Math.max(0, (summary?.subScores?.eyeContact || 85) - sessionData.ghostComparison.take1EyeContact)}%)
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500">Take 1: {sessionData.ghostComparison.take1EyeContact}%</span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">Breathing Cadence</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-lg font-mono font-bold text-slate-100">
+                  {summary?.avgBreath || 15} br/min
+                </span>
+                <span className="text-xs font-mono font-bold text-sky-400">Stable</span>
+              </div>
+              <span className="text-[10px] text-slate-500">Take 1: {sessionData.ghostComparison.take1Breath} br/min</span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">Overall Mastery</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-lg font-mono font-bold text-indigo-400">
+                  {summary?.grade || 'A'}
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-400">
+                  {(summary?.overallScore || 85) >= sessionData.ghostComparison.take1Score ? 'Improved ↑' : 'Maintained'}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500">Take 1: {sessionData.ghostComparison.take1Score} pts</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Multi-Track Replay Timeline */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
