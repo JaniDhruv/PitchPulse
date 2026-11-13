@@ -36,6 +36,8 @@ async function getSdkModules() {
 export default function SessionScreen({
   apiKey,
   enableTelemetry = false,
+  ghostTake = null,
+  onClearGhost = null,
   onFinishSession,
   onOpenHistory,
   onOpenSettings,
@@ -62,6 +64,7 @@ export default function SessionScreen({
   // Fast mutable ring buffers for 60fps canvas drawing (0% React re-render lag)
   const pulseBufferRef = useRef(new Array(120).fill(0));
   const breathingBufferRef = useRef(new Array(120).fill(0));
+  const ghostPulseBufferRef = useRef(new Array(120).fill(0));
 
   // Recorded session data accumulator
   const sessionDataRef = useRef({
@@ -178,6 +181,14 @@ export default function SessionScreen({
       const resp = Math.sin(phase * 0.8);
       breathingBufferRef.current.push(resp);
       if (breathingBufferRef.current.length > 120) breathingBufferRef.current.shift();
+
+      // Ghost Take pulse wave simulation if active
+      if (ghostTake) {
+        const ghostFreq = ((ghostTake.summary?.avgPulse || 88) / 60) * 4;
+        const ghostPpg = Math.sin(phase * ghostFreq) * 0.6 + Math.sin(phase * ghostFreq * 2) * 0.25;
+        ghostPulseBufferRef.current.push(ghostPpg);
+        if (ghostPulseBufferRef.current.length > 120) ghostPulseBufferRef.current.shift();
+      }
 
       const simBpm = Math.round(72 + Math.sin(phase * 0.3) * 6);
       setLiveBpm(simBpm);
@@ -396,6 +407,21 @@ export default function SessionScreen({
           </div>
         </div>
 
+        {ghostTake && (
+          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-semibold shadow-lg">
+            <span>👻 Ghost Mode Active: Comparing with Take 1 ({ghostTake.summary?.avgPulse || 88} BPM)</span>
+            {onClearGhost && (
+              <button
+                onClick={onClearGhost}
+                className="text-purple-400 hover:text-purple-200 text-[10px] uppercase font-bold ml-1 cursor-pointer"
+                title="Exit Ghost Mode"
+              >
+                ✕ Clear
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenHistory}
@@ -456,6 +482,8 @@ export default function SessionScreen({
             <div className="flex-1 min-h-[105px]">
               <PulseCanvas
                 bufferRef={pulseBufferRef}
+                ghostBufferRef={ghostTake ? ghostPulseBufferRef : null}
+                ghostAvgBpm={ghostTake?.summary?.avgPulse}
                 liveBpm={liveBpm}
                 isRecording={isRecording}
               />

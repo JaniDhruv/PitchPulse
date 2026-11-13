@@ -14,6 +14,7 @@ export default function App() {
   const [apiKey, setApiKey] = useState('');
   const [currentView, setCurrentView] = useState('studio'); // 'studio' | 'replay' | 'history'
   const [activeSession, setActiveSession] = useState(null);
+  const [ghostTake, setGhostTake] = useState(null);
 
   useEffect(() => {
     async function loadKey() {
@@ -34,8 +35,23 @@ export default function App() {
   };
 
   const handleFinishSession = (sessionData) => {
+    // If ghost take was active, attach comparison metadata
+    if (ghostTake) {
+      sessionData.ghostComparison = {
+        take1Score: ghostTake.summary?.overallScore || 75,
+        take1Pulse: ghostTake.summary?.avgPulse || 88,
+        take1EyeContact: ghostTake.summary?.subScores?.eyeContact || 65,
+        take1Breath: ghostTake.summary?.avgBreath || 18,
+        take1Date: ghostTake.timestamp || Date.now(),
+      };
+    }
     setActiveSession(sessionData);
     setCurrentView('replay');
+  };
+
+  const handlePracticeWithGhost = (sessionToGhost) => {
+    setGhostTake(sessionToGhost);
+    setCurrentView('studio');
   };
 
   const handleSelectHistorySession = (sessionData) => {
@@ -57,6 +73,8 @@ export default function App() {
         <SessionScreen
           apiKey={apiKey}
           enableTelemetry={enableTelemetry}
+          ghostTake={ghostTake}
+          onClearGhost={() => setGhostTake(null)}
           onFinishSession={handleFinishSession}
           onOpenHistory={() => setCurrentView('history')}
           onOpenSettings={() => setHasConsented(false)}
@@ -66,7 +84,11 @@ export default function App() {
       {currentView === 'replay' && (
         <ReplayScreen
           sessionData={activeSession}
-          onBackToStudio={() => setCurrentView('studio')}
+          onBackToStudio={() => {
+            setGhostTake(null);
+            setCurrentView('studio');
+          }}
+          onPracticeWithGhost={handlePracticeWithGhost}
         />
       )}
 
