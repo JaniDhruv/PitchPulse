@@ -9,24 +9,28 @@ import SpeakingTimeline from '../components/SpeakingTimeline';
 import { calculateLiveComposure, calculateEyeContactScore, calculateSessionSummary } from '../lib/scoring';
 import { EMOTIONS } from '../lib/constants';
 
-// We import the SDK dynamically or handle graceful fallback
-let SmartSpectraSDK = null;
-let decodeMetrics = null;
-let cardioMetrics = [];
-let breathingMetrics = [];
-let faceMetrics = [];
+// Dynamic module cache to avoid blocking top-level module evaluation
+let sdkModulesCache = null;
 
-try {
-  const sdkModule = await import('@smartspectra/node-sdk/renderer');
-  SmartSpectraSDK = sdkModule.SmartSpectraSDK;
-  cardioMetrics = sdkModule.cardioMetrics || [];
-  breathingMetrics = sdkModule.breathingMetrics || [];
-  faceMetrics = sdkModule.faceMetrics || [];
-
-  const msgModule = await import('@smartspectra/node-sdk/messages');
-  decodeMetrics = msgModule.decodeMetrics;
-} catch (e) {
-  console.warn('SmartSpectra renderer module deferred or not in window:', e);
+async function getSdkModules() {
+  if (sdkModulesCache) return sdkModulesCache;
+  try {
+    const [sdkModule, msgModule] = await Promise.all([
+      import('@smartspectra/node-sdk/renderer'),
+      import('@smartspectra/node-sdk/messages'),
+    ]);
+    sdkModulesCache = {
+      SmartSpectraSDK: sdkModule.SmartSpectraSDK,
+      cardioMetrics: sdkModule.cardioMetrics || [],
+      breathingMetrics: sdkModule.breathingMetrics || [],
+      faceMetrics: sdkModule.faceMetrics || [],
+      decodeMetrics: msgModule.decodeMetrics,
+    };
+    return sdkModulesCache;
+  } catch (err) {
+    console.warn('SmartSpectra SDK modules unavailable in renderer:', err);
+    return null;
+  }
 }
 
 export default function SessionScreen({
@@ -80,37 +84,41 @@ export default function SessionScreen({
     let isCancelled = false;
 
     async function initSdk() {
-      if (SmartSpectraSDK && apiKey) {
-        try {
-          const sdk = new SmartSpectraSDK({
-            apiKey,
-            requestedMetrics: [...cardioMetrics, ...breathingMetrics, ...faceMetrics],
-          });
-          sdkInstanceRef.current = sdk;
+      if (apiKey) {
+        const modules = await getSdkModules();
+        if (modules && modules.SmartSpectraSDK && !isCancelled) {
+          try {
+            const { SmartSpectraSDK, cardioMetrics, breathingMetrics, faceMetrics, decodeMetrics } = modules;
+            const sdk = new SmartSpectraSDK({
+              apiKey,
+              requestedMetrics: [...cardioMetrics, ...breathingMetrics, ...faceMetrics],
+            });
+            sdkInstanceRef.current = sdk;
 
-          sdk.on('streamAvailable', (mediaStream) => {
-            if (!isCancelled) setStream(mediaStream);
-          });
+            sdk.on('streamAvailable', (mediaStream) => {
+              if (!isCancelled) setStream(mediaStream);
+            });
 
-          sdk.on('validationStatus', (code, _ts, hint) => {
-            if (!isCancelled) setValidationHint(hint || '');
-          });
+            sdk.on('validationStatus', (code, _ts, hint) => {
+              if (!isCancelled) setValidationHint(hint || '');
+            });
 
-          sdk.on('metrics', (buf) => {
-            if (!decodeMetrics || isCancelled) return;
-            try {
-              const metrics = decodeMetrics(buf);
-              processIncomingMetrics(metrics);
-            } catch (err) {
-              console.error('Error decoding metrics buffer:', err);
-            }
-          });
+            sdk.on('metrics', (buf) => {
+              if (!decodeMetrics || isCancelled) return;
+              try {
+                const metrics = decodeMetrics(buf);
+                processIncomingMetrics(metrics);
+              } catch (err) {
+                console.error('Error decoding metrics buffer:', err);
+              }
+            });
 
-          await sdk.start();
-          if (!isCancelled) setIsSdkReady(true);
-          return;
-        } catch (err) {
-          console.warn('SmartSpectra direct acquisition failed or offline. Starting simulator mode:', err);
+            await sdk.start();
+            if (!isCancelled) setIsSdkReady(true);
+            return;
+          } catch (err) {
+            console.warn('SmartSpectra direct acquisition failed or offline. Starting simulator mode:', err);
+          }
         }
       }
 
