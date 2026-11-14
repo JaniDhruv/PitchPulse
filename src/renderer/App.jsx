@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConsentScreen from './views/ConsentScreen';
 import SessionScreen from './views/SessionScreen';
+import ScoreRevealScreen from './views/ScoreRevealScreen';
 import ReplayScreen from './views/ReplayScreen';
 import HistoryScreen from './views/HistoryScreen';
 
@@ -12,7 +13,7 @@ export default function App() {
     return localStorage.getItem('pitchpulse_telemetry') === 'true';
   });
   const [apiKey, setApiKey] = useState('');
-  const [currentView, setCurrentView] = useState('studio'); // 'studio' | 'replay' | 'history'
+  const [currentView, setCurrentView] = useState('studio'); // 'studio' | 'reveal' | 'replay' | 'history'
   const [activeSession, setActiveSession] = useState(null);
   const [ghostTake, setGhostTake] = useState(null);
 
@@ -46,7 +47,8 @@ export default function App() {
       };
     }
     setActiveSession(sessionData);
-    setCurrentView('replay');
+    // Trigger cinematic score reveal first
+    setCurrentView('reveal');
   };
 
   const handlePracticeWithGhost = (sessionToGhost) => {
@@ -60,7 +62,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-screen h-screen bg-[#0b0f19] text-slate-100 flex flex-col overflow-hidden font-sans antialiased">
+    <div className="w-screen h-screen bg-[#070b14] text-slate-100 flex flex-col overflow-hidden font-sans antialiased">
       {!hasConsented && (
         <ConsentScreen
           onAccept={handleConsentAccept}
@@ -78,6 +80,13 @@ export default function App() {
           onFinishSession={handleFinishSession}
           onOpenHistory={() => setCurrentView('history')}
           onOpenSettings={() => setHasConsented(false)}
+        />
+      )}
+
+      {currentView === 'reveal' && (
+        <ScoreRevealScreen
+          sessionData={activeSession}
+          onContinueToReplay={() => setCurrentView('replay')}
         />
       )}
 
@@ -101,4 +110,3 @@ export default function App() {
     </div>
   );
 }
-
