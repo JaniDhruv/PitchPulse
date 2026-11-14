@@ -268,8 +268,7 @@ export default function SessionScreen({
         metrics.breathing.rate?.length > 0 &&
         !latestMetricsRef.current.isSpeaking
       ) {
-        const lastB =
-          metrics.breathing.rate[metrics.breathing.rate.length - 1];
+        const lastB = metrics.breathing.rate[metrics.breathing.rate.length - 1];
         if (
           lastB?.value &&
           (lastB.confidence == null || lastB.confidence >= 35)
@@ -300,8 +299,7 @@ export default function SessionScreen({
         latestMetricsRef.current.isSpeaking = isTalk;
       }
       if (metrics.face.expression?.length > 0) {
-        const exp =
-          metrics.face.expression[metrics.face.expression.length - 1];
+        const exp = metrics.face.expression[metrics.face.expression.length - 1];
         if (exp?.category) {
           setCurrentExpression(exp.category);
           latestMetricsRef.current.currentExpression = exp.category;
@@ -371,7 +369,9 @@ export default function SessionScreen({
         const events = sessionDataRef.current.speakingEvents;
         const talkCount = events.filter((e) => e.talking).length;
         const newTalkRatio =
-          events.length > 0 ? Math.round((talkCount / events.length) * 100) : 70;
+          events.length > 0
+            ? Math.round((talkCount / events.length) * 100)
+            : 70;
         setTalkRatio(newTalkRatio);
 
         // 3. Breath holding detection
@@ -623,10 +623,7 @@ export default function SessionScreen({
         <div className="lg:col-span-5 flex flex-col space-y-3">
           {/* Top Gauges: Composure & Eye Contact */}
           <div className="grid grid-cols-2 gap-3">
-            <ComposureGauge
-              score={liveComposure}
-              isHrvLocked={isHrvLocked}
-            />
+            <ComposureGauge score={liveComposure} isHrvLocked={isHrvLocked} />
             <EyeContactMeter
               score={eyeContactScore}
               isCentered={isGazeCentered}

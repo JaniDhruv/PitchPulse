@@ -4,8 +4,8 @@ import { useAnimatedValue } from '../hooks/useAnimatedValue';
 
 /**
  * High-performance 60 FPS HTML5 Canvas for real-time PPG / arterial pulse waveforms.
- * Features DPI-aware razor-sharp rendering, anatomical heart-rate pulsing,
- * and rhythm-synchronized arterial bloom dynamics.
+ * Features dynamic cardiovascular gradient fills, lead ripple animations,
+ * and rhythm-synchronized pulse dynamics.
  */
 export default function PulseCanvas({
   bufferRef,
@@ -18,7 +18,7 @@ export default function PulseCanvas({
   const animatedBpm = useAnimatedValue(liveBpm, { speed: 0.12 });
   const pulseBeatRef = useRef(0);
 
-  // Compute beat duration in seconds for synchronized cardiac pulsation
+  // Compute beat duration in seconds for CSS pulsing
   const beatDuration = Math.max(0.35, Math.min(1.5, 60 / (animatedBpm || 72)));
 
   useEffect(() => {
@@ -28,21 +28,8 @@ export default function PulseCanvas({
     let animationFrameId;
 
     const render = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const width = canvas.clientWidth || 400;
-      const height = canvas.clientHeight || 120;
-
-      // Ensure crisp high-DPI canvas backing store
-      const targetW = Math.round(width * dpr);
-      const targetH = Math.round(height * dpr);
-      if (canvas.width !== targetW || canvas.height !== targetH) {
-        canvas.width = targetW;
-        canvas.height = targetH;
-      }
-
-      ctx.save();
-      ctx.scale(dpr, dpr);
-
+      const width = canvas.width;
+      const height = canvas.height;
       pulseBeatRef.current = (pulseBeatRef.current + 0.05) % (Math.PI * 2);
 
       // Deep dark sleek background
@@ -50,7 +37,7 @@ export default function PulseCanvas({
       ctx.fillRect(0, 0, width, height);
 
       // Sleek subtle grid lines
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.22)';
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let x = 0; x < width; x += 30) {
@@ -106,6 +93,7 @@ export default function PulseCanvas({
           if (val > max) max = val;
         }
         const range = max - min || 1;
+
         const step = width / (buffer.length - 1);
 
         // Path for gradient fill below curve
@@ -152,7 +140,7 @@ export default function PulseCanvas({
         ctx.stroke();
 
         // Pulsing lead dot & expanding halo
-        const lastX = width - 3;
+        const lastX = width - 2;
         const lastNormY = (buffer[buffer.length - 1] - min) / range;
         const lastY = height - (lastNormY * (height * 0.68) + height * 0.16);
 
@@ -181,7 +169,6 @@ export default function PulseCanvas({
         ctx.stroke();
       }
 
-      ctx.restore();
       animationFrameId = requestAnimationFrame(render);
     };
 
@@ -208,8 +195,8 @@ export default function PulseCanvas({
       {/* Top Header */}
       <div className="absolute top-2.5 left-3.5 z-10 flex items-center space-x-2">
         <div
-          className="flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/15 border border-sky-400/40 text-sky-400 animate-heartbeat"
-          style={{ animationDuration: `${beatDuration}s` }}
+          className="flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/10 border border-sky-400/40 text-sky-400"
+          style={{ animation: `pulse ${beatDuration}s infinite ease-in-out` }}
         >
           <Heart className="w-3 h-3 fill-sky-400/80 text-sky-300" />
         </div>
@@ -230,14 +217,17 @@ export default function PulseCanvas({
             <span className="font-semibold uppercase tracking-wider text-[10px]">
               Ghost:
             </span>
-            <span className="font-bold font-mono text-purple-200">{ghostAvgBpm}</span>
+            <span className="font-bold font-mono text-purple-200">
+              {ghostAvgBpm}
+            </span>
             <span className="text-[10px] text-purple-400">BPM</span>
           </div>
         )}
         <div className="flex items-baseline space-x-1.5">
           <span
-            className="text-2xl font-black font-mono text-sky-400 tracking-tight transition-transform duration-150 inline-block"
+            className="text-2xl font-black font-mono text-sky-400 tracking-tight transition-transform duration-150"
             style={{
+              display: 'inline-block',
               transform: `scale(${1.0 + (isRecording ? 0.05 : 0)})`,
             }}
           >
@@ -251,6 +241,8 @@ export default function PulseCanvas({
 
       <canvas
         ref={canvasRef}
+        width={420}
+        height={135}
         className="w-full h-full block"
       />
     </div>

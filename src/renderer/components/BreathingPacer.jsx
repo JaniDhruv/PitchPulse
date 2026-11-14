@@ -112,8 +112,8 @@ export default function BreathingPacer({ liveBpm = 74, onComplete, onSkip }) {
             Center Your Breath & Pulse
           </h2>
           <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 leading-relaxed">
-            Taking 2 deep breaths calms stage nervousness and allows SmartSpectra
-            sensors to establish your resting baseline.
+            Taking 2 deep breaths calms stage nervousness and allows
+            SmartSpectra sensors to establish your resting baseline.
           </p>
         </div>
 

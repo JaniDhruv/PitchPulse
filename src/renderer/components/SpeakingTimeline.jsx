@@ -80,8 +80,8 @@ export default function SpeakingTimeline({
                   item.talking
                     ? 'bg-sky-400 shadow-sm shadow-sky-500/40'
                     : item.pauseSec > 4
-                    ? 'bg-amber-500'
-                    : 'bg-slate-800'
+                      ? 'bg-amber-500'
+                      : 'bg-slate-800'
                 }`}
                 style={{
                   height: item.heightPct,
@@ -99,13 +99,16 @@ export default function SpeakingTimeline({
       <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 px-1 font-medium">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-sm bg-sky-400"></span> Active Speech
+            <span className="w-2 h-2 rounded-sm bg-sky-400"></span> Active
+            Speech
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-sm bg-slate-800"></span> Natural Pause
+            <span className="w-2 h-2 rounded-sm bg-slate-800"></span> Natural
+            Pause
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-sm bg-amber-500"></span> Hesitation (&gt;4.5s)
+            <span className="w-2 h-2 rounded-sm bg-amber-500"></span> Hesitation
+            (&gt;4.5s)
           </span>
         </div>
         <span className="text-slate-500">Target Range: 60% – 80%</span>

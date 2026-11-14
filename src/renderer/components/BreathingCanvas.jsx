@@ -67,7 +67,8 @@ export default function BreathingCanvas({
         let slopeText = '● STEADY';
         let slopeColor = '#34d399';
         if (buffer.length >= 6) {
-          const recentDelta = buffer[buffer.length - 1] - buffer[buffer.length - 6];
+          const recentDelta =
+            buffer[buffer.length - 1] - buffer[buffer.length - 6];
           if (recentDelta > 0.04) {
             slopeText = '▲ INHALE';
             slopeColor = '#38bdf8';
@@ -80,8 +81,8 @@ export default function BreathingCanvas({
         const strokeColor = isBreathHolding
           ? '#f87171'
           : isSpeaking
-          ? '#38bdf8'
-          : '#34d399';
+            ? '#38bdf8'
+            : '#34d399';
         const step = width / (buffer.length - 1);
 
         // Fill area under curve
@@ -142,8 +143,8 @@ export default function BreathingCanvas({
         ctx.fillStyle = isBreathHolding
           ? '#f87171'
           : isSpeaking
-          ? '#38bdf8'
-          : '#34d399';
+            ? '#38bdf8'
+            : '#34d399';
         ctx.beginPath();
         ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
         ctx.fill();
@@ -190,8 +191,8 @@ export default function BreathingCanvas({
             isBreathHolding
               ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-ping'
               : isSpeaking
-              ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
-              : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 animate-pulse'
+                ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
+                : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 animate-pulse'
           }`}
         >
           <Wind className="w-3 h-3" />
@@ -232,10 +233,7 @@ export default function BreathingCanvas({
         </div>
       )}
 
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full block"
-      />
+      <canvas ref={canvasRef} className="w-full h-full block" />
     </div>
   );
 }

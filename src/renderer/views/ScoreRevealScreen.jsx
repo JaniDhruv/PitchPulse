@@ -122,8 +122,8 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
             Performance Analysis Complete
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Processed {duration}s of real-time cardiorespiratory and optical gaze
-            telemetry.
+            Processed {duration}s of real-time cardiorespiratory and optical
+            gaze telemetry.
           </p>
         </div>
 

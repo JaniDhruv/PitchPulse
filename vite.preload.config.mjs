@@ -4,10 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     rollupOptions: {
-      external: [
-        'electron',
-        '@smartspectra/node-sdk/preload',
-      ],
+      external: ['electron', '@smartspectra/node-sdk/preload'],
     },
   },
 });

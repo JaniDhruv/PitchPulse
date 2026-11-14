@@ -49,7 +49,11 @@ const setupIpcHandlers = () => {
       const dir = await ensureSessionsDir();
       const filename = `session_${sessionData.id || Date.now()}.json`;
       const filePath = path.join(dir, filename);
-      await fs.writeFile(filePath, JSON.stringify(sessionData, null, 2), 'utf-8');
+      await fs.writeFile(
+        filePath,
+        JSON.stringify(sessionData, null, 2),
+        'utf-8',
+      );
       return { success: true, path: filePath };
     } catch (err) {
       console.error('Failed to save session:', err);
@@ -61,7 +65,7 @@ const setupIpcHandlers = () => {
     try {
       const dir = await ensureSessionsDir();
       const files = await fs.readdir(dir);
-      const jsonFiles = files.filter(f => f.endsWith('.json'));
+      const jsonFiles = files.filter((f) => f.endsWith('.json'));
       const sessions = [];
       for (const file of jsonFiles) {
         try {
@@ -121,7 +125,10 @@ const createWindow = () => {
       },
     });
   } catch (err) {
-    console.warn('[SmartSpectra IPC] Native binding uninitialized or deferred:', err.message);
+    console.warn(
+      '[SmartSpectra IPC] Native binding uninitialized or deferred:',
+      err.message,
+    );
   }
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

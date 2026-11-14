@@ -1,33 +1,45 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Camera, HardDrive, Key, CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
+import {
+  ShieldCheck,
+  Camera,
+  HardDrive,
+  Key,
+  AlertTriangle,
+  ArrowRight,
+} from 'lucide-react';
 import { CONSENT_POLICY } from '../lib/constants';
 
-export default function ConsentScreen({ onAccept, savedApiKey = '', initialTelemetry = false }) {
+export default function ConsentScreen({
+  onAccept,
+  savedApiKey = '',
+  initialTelemetry = false,
+}) {
   const [apiKey, setApiKey] = useState(savedApiKey);
   const [enableTelemetry, setEnableTelemetry] = useState(initialTelemetry);
   const [hasAgreed, setHasAgreed] = useState(false);
-  const [isSavingKey, setIsSavingKey] = useState(false);
 
   const handleStart = async () => {
     if (!hasAgreed) return;
     if (apiKey && apiKey !== savedApiKey && window.pitchPulseAPI) {
-      setIsSavingKey(true);
       await window.pitchPulseAPI.saveApiKey(apiKey);
-      setIsSavingKey(false);
     }
     onAccept(apiKey, enableTelemetry);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4 overflow-y-auto select-none">
       <div className="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 text-slate-200">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-100">Camera Consent & Data Handling</h1>
-            <p className="text-xs text-slate-400">PitchPulse Privacy & Responsible Sensing Architecture</p>
+            <h1 className="text-xl font-bold text-slate-100">
+              Camera Consent & Data Handling
+            </h1>
+            <p className="text-xs text-slate-400">
+              PitchPulse Privacy & Responsible Sensing Architecture
+            </p>
           </div>
         </div>
 
@@ -36,24 +48,36 @@ export default function ConsentScreen({ onAccept, savedApiKey = '', initialTelem
           <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
             <Camera className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold text-slate-200 block mb-0.5">100% Local Frame Processing</span>
-              <p className="text-slate-400 leading-relaxed">{CONSENT_POLICY.cameraUsage}</p>
+              <span className="font-semibold text-slate-200 block mb-0.5">
+                100% Local Frame Processing
+              </span>
+              <p className="text-slate-400 leading-relaxed">
+                {CONSENT_POLICY.cameraUsage}
+              </p>
             </div>
           </div>
 
           <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
             <HardDrive className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold text-slate-200 block mb-0.5">Local Metric Telemetry Only</span>
-              <p className="text-slate-400 leading-relaxed">{CONSENT_POLICY.dataRetention}</p>
+              <span className="font-semibold text-slate-200 block mb-0.5">
+                Local Metric Telemetry Only
+              </span>
+              <p className="text-slate-400 leading-relaxed">
+                {CONSENT_POLICY.dataRetention}
+              </p>
             </div>
           </div>
 
           <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold text-slate-200 block mb-0.5">Non-Medical Educational Wellness Scope</span>
-              <p className="text-slate-400 leading-relaxed">{CONSENT_POLICY.disclaimer}</p>
+              <span className="font-semibold text-slate-200 block mb-0.5">
+                Non-Medical Educational Wellness Scope
+              </span>
+              <p className="text-slate-400 leading-relaxed">
+                {CONSENT_POLICY.disclaimer}
+              </p>
             </div>
           </div>
         </div>
@@ -82,7 +106,8 @@ export default function ConsentScreen({ onAccept, savedApiKey = '', initialTelem
             className="w-full px-3.5 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-100 placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-sky-500 transition-colors"
           />
           <p className="text-[11px] text-slate-500 mt-1.5">
-            Your key stays local on your machine and is loaded by the native SDK runtime.
+            Your key stays local on your machine and is loaded by the native SDK
+            runtime.
           </p>
         </div>
 
@@ -95,18 +120,29 @@ export default function ConsentScreen({ onAccept, savedApiKey = '', initialTelem
             onChange={(e) => setEnableTelemetry(e.target.checked)}
             className="mt-0.5 w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0 cursor-pointer"
           />
-          <label htmlFor="telemetry-toggle" className="text-xs text-slate-300 cursor-pointer select-none">
+          <label
+            htmlFor="telemetry-toggle"
+            className="text-xs text-slate-300 cursor-pointer select-none"
+          >
             <span className="font-semibold text-slate-200 block mb-0.5">
-              Allow Anonymous SDK Telemetry ({enableTelemetry ? 'Enabled' : 'Disabled — Zero Egress'})
+              Allow Anonymous SDK Telemetry (
+              {enableTelemetry ? 'Enabled' : 'Disabled — Zero Egress'})
             </span>
             <span className="text-slate-400 leading-relaxed block">
-              When disabled, PitchPulse configures the SmartSpectra SDK with <code className="text-sky-300 bg-slate-900 px-1 rounded">enableTelemetry: false</code>. Absolutely no diagnostics or metadata leave your local device.
+              When disabled, PitchPulse configures the SmartSpectra SDK with{' '}
+              <code className="text-sky-300 bg-slate-900 px-1 rounded">
+                enableTelemetry: false
+              </code>
+              . Absolutely no diagnostics or metadata leave your local device.
             </span>
           </label>
         </div>
 
         {/* Consent Checkbox */}
-        <div className="flex items-start gap-3 mb-6 p-3 rounded-lg hover:bg-slate-800/40 cursor-pointer" onClick={() => setHasAgreed(!hasAgreed)}>
+        <div
+          className="flex items-start gap-3 mb-6 p-3 rounded-lg hover:bg-slate-800/40 cursor-pointer"
+          onClick={() => setHasAgreed(!hasAgreed)}
+        >
           <input
             type="checkbox"
             checked={hasAgreed}
@@ -114,7 +150,9 @@ export default function ConsentScreen({ onAccept, savedApiKey = '', initialTelem
             className="mt-0.5 w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0 cursor-pointer"
           />
           <span className="text-xs text-slate-300 select-none leading-relaxed">
-            I consent to standard camera vital-signal sensing for practice presentation coaching. I understand that all processing occurs on-device and is not medical monitoring.
+            I consent to standard camera vital-signal sensing for practice
+            presentation coaching. I understand that all processing occurs
+            on-device and is not medical monitoring.
           </span>
         </div>
 
@@ -137,4 +175,3 @@ export default function ConsentScreen({ onAccept, savedApiKey = '', initialTelem
     </div>
   );
 }
-
