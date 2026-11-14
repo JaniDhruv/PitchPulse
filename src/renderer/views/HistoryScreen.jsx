@@ -192,7 +192,8 @@ export default function HistoryScreen({ onBack, onSelectSession }) {
                       <span className="flex items-center gap-1 text-rose-300">
                         ♥ {avgPulse} BPM
                       </span>
-                      {sess.summary?.recoveryStats && (
+                      {sess.summary?.recoveryStats?.recoveryLatencySec !=
+                        null && (
                         <span className="flex items-center gap-1 text-amber-300">
                           ⚡ {sess.summary.recoveryStats.recoveryLatencySec}s
                           rec

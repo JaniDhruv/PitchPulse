@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Sparkles, Heart, Eye, Mic, Zap } from 'lucide-react';
+import {
+  ArrowRight,
+  Sparkles,
+  Heart,
+  Eye,
+  Mic,
+  Zap,
+  AlertTriangle,
+} from 'lucide-react';
 
 /**
  * Cinematic Score Reveal Screen.
@@ -23,6 +31,7 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
   const eyeScore = sessionData?.summary?.subScores?.eyeContact || 85;
   const talkRatio = sessionData?.summary?.talkRatio || 72;
   const recoveryStats = sessionData?.summary?.recoveryStats;
+  const isDemoMode = Boolean(sessionData?.isDemoMode);
 
   // Grade badge color themes
   const gradeThemes = {
@@ -113,18 +122,26 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
 
       <div className="max-w-lg w-full flex flex-col items-center text-center space-y-7 relative z-10">
         {/* Header Tag */}
-        <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-sky-400 text-xs font-bold uppercase tracking-widest shadow-md">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>Presentation Biometric Assessment</span>
-        </div>
+        {isDemoMode ? (
+          <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-amber-950/90 border border-amber-500/50 text-amber-300 text-xs font-bold uppercase tracking-widest shadow-md">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>Synthetic Demo Run</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-xs font-bold uppercase tracking-widest shadow-md">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Live Biometric Assessment</span>
+          </div>
+        )}
 
         <div>
           <h2 className="text-3xl font-black text-slate-100 tracking-tight">
             Performance Analysis Complete
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Processed {duration}s of real-time cardiorespiratory and optical
-            gaze telemetry.
+            {isDemoMode
+              ? `Processed ${duration}s of simulated cardiorespiratory practice telemetry (No Live Sensing).`
+              : `Processed ${duration}s of live cardiorespiratory and camera-facing gaze telemetry.`}
           </p>
         </div>
 
