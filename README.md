@@ -16,20 +16,63 @@
 
 ## 💡 What is PitchPulse?
 
-**PitchPulse** turns any standard laptop camera into a professional, real-time **biometric presentation and mock interview coach**.
+**PitchPulse** is a contactless physiological presentation coach that answers one high-stakes question:
 
-Public speaking and high-stakes interviews are inherently physiological: when we get nervous, our heart rate spikes, breathing shallows or freezes, our gaze drops to glance at notes, and speech rushes without breathing pauses.
+> **"When you hit the exact moment you freeze or stumble under pressure, can you recover your composure faster on the next take?"**
 
-Until now, measuring these states required wearable chest straps or invasive finger sensors. With **Presage SmartSpectra**, PitchPulse extracts **6 continuous biometric & behavioral signals contactlessly from regular video frames** at 30–60 FPS:
+Instead of giving speakers a generic "confidence score" or a cluttered wall of passive biometric graphs, PitchPulse introduces **Ghost Take**: a Mario Kart–style racing ghost for your autonomic nervous system. You mark the exact slide or question where pressure spikes, measure your physiological recovery latency contactlessly via **Presage SmartSpectra**, and then re-pitch against your previous take's translucent physiological curve to prove your recovery improved.
 
-1. **Pulse Plethysmography (PPG)**: Real-time heart rate (BPM) & arterial pressure trace
-2. **Heart Rate Variability (HRV / RMSSD)**: Autonomic nervous system composure & coherence
-3. **Respiratory Waveforms**: Upper chest & lower abdominal movement traces + breath-holding detection
-4. **Gaze & Iris Landmark Vectors**: Eye contact percentage with the camera/audience
-5. **Speech & Talking Activity**: Real-time talking detection, filler silence & pacing ratio
-6. **Facial Expression Dynamics**: Tension vs. confidence emotion probability distribution
+---
 
-When your pitch concludes, PitchPulse generates a **Multi-Track Flight Recorder Replay** synchronizing all 6 streams with an interactive scrubber, a composite performance grade (0–100), and actionable tips.
+## 🛡️ Responsible Sensing Charter: Rehearsal, Not Judgment
+
+> _"PitchPulse does not judge human confidence or diagnose anxiety. It helps speakers privately measure and rehearse their own physiological recovery pattern."_
+
+Biometric feedback in public speaking often falls into pseudoscience or invasive surveillance. PitchPulse is built on four non-negotiable responsible sensing principles:
+
+1. **Self-Relative, Not Normative**: We never compare you to a "standard human" or claim a high heart rate makes you a "bad speaker." Every measurement is relative solely to your own pre-pitch resting baseline.
+2. **No Mind-Reading or Lie Detection**: Optical metrics are labeled with scientific modesty (`Camera-Facing Gaze (Estimate)`, `Pulse Stability Index`). Facial tension is an optical muscle observation, not an emotion diagnostic.
+3. **Zero Default Fabrication**: When no pressure moment or pulse surge occurs, PitchPulse never invents a flattering recovery statistic. It reports _"No measurable pressure moment captured"_ to preserve scientific truth.
+4. **100% Air-Gapped Local Processing**: Video frames from `getUserMedia` never touch your SSD and never leave your machine. Telemetry stays strictly in local memory and local user storage.
+
+---
+
+## 🎬 The 45–60 Second Judge Walkthrough Story
+
+PitchPulse is built around a single, undeniable human rehearsal loop that any judge can evaluate with the sound turned off:
+
+```
+[Take 1: Raw Pressure]
+Speaker rehearses opening slides or tackles a tough Q&A objection
+  → Hits [⚡ Mark Pressure Moment] (Spacebar) right when stage nerves peak
+  → SmartSpectra captures the autonomic response (e.g. pulse spike, gaze drift)
+  → PitchPulse measures the exact Recovery Latency until pulse returns to resting baseline
+
+[Autonomic Reset]
+Speaker uses the Pre-Pitch Box Breathing Pacer (14s cycles) to reset baseline tone.
+
+[Take 2: Ghost Take Rehearsal]
+Speaker re-pitches with Take 1's cardiac trace as a translucent violet ghost curve behind their live pulse wave
+  → Encounters the same hard slide, maintains steady nasal pacing and camera focus
+  → Hits [⚡ Mark Pressure Moment] at the same milestone
+  → Heart rate spike is visibly attenuated and recovers to baseline seconds faster!
+
+[The Measurable Outcome]
+🏆 "Measurably Faster Recovery After the Pressure Moment"
+*(Illustrative workflow — all recovery deltas are calculated dynamically from actual recorded rPPG frames, never hardcoded)*
+```
+
+---
+
+## 🔬 Truth-to-Demo & Sensing Transparency
+
+A presentation coach's greatest asset is scientific honesty. PitchPulse never masks simulated data as live hardware sensing:
+
+- **● Live SmartSpectra SDK Mode**: When a valid SmartSpectra API key is present, the app initializes the native C++ FFI pipeline via `koffi` and `@smartspectra/node-sdk`. The UI displays an emerald badge `[● LIVE SMARTSPECTRA SDK]` with real-time signal confidence ratings (e.g. `Quality: 88%`) and baseline lock indicators.
+- **⏳ Baseline Calibration Window**: During the first 15–20 seconds of optical rPPG video acquisition, PitchPulse displays an active countdown `[⏳ CALIBRATING BASELINE (14s/20s)]` to respect the optical blood absorption settling period.
+- **⚠️ Transparent Demo Simulation Mode**: If no API key is provided or if network authentication fails, PitchPulse activates a dynamic biological simulation engine. The UI hard-labels the mode with prominent amber badges: `[⚠️ DEMO DATA — NO LIVE SENSING]`. All demo flight logs are explicitly tagged `[DEMO DATA - SIMULATED]` in Replay and History to guarantee absolute integrity.
+- **🛡️ Strict Provenance on Ghost Take Comparisons**: PitchPulse explicitly labels provenance on comparative reviews. If either session was recorded in demo mode, an unmistakable `[⚠️ Synthetic Provenance]` notice clarifies that the comparison is illustrative workflow rehearsal rather than physical experimental data.
+- **🚫 Zero Default Fabrication**: When no pressure moment is marked or acute surge detected, PitchPulse never manufactures a flattering recovery score. It explicitly reports _"No measurable pressure moment captured"_ rather than inventing artificial stress peaks or recovery seconds.
 
 ---
 
@@ -75,45 +118,6 @@ flowchart TD
     DECODE --> TALK_BAR
     DECODE --> REPLAY
 ```
-
----
-
-## 🎬 The 45–60 Second Judge Walkthrough Story
-
-PitchPulse is built around a single, undeniable human story that any judge can understand with the sound turned off:
-
-```
-[Take 1: Raw Pressure]
-Speaker freezes on opening slide / stumbles on a tough Q&A question
-  → Hits [⚡ Mark Pressure Moment] (Spacebar)
-  → PitchPulse tracks the autonomic surge (+16 BPM spike, gaze drops to 45%)
-  → Takes 24 seconds to recover composure!
-
-[Autonomic Reset]
-Speaker uses the Pre-Pitch Box Breathing Pacer (14s cycles) to reset baseline tone.
-
-[Take 2: Ghost Take Rehearsal]
-Speaker re-pitches with Take 1's cardiac trace as a violet ghost curve behind their live pulse wave
-  → Encounters the same hard slide, maintains nasal breathing & lens focus
-  → Hits [⚡ Mark Pressure Moment]
-  → Heart rate barely spikes (+6 BPM) and returns to baseline in just 9 seconds!
-
-[The Measurable Outcome]
-🏆 "15 Seconds Faster Recovery After Pressure Moment!"
-Not a vague, subjective AI score — an unmistakable, scientifically grounded physiological triumph.
-```
-
----
-
-## 🔬 Truth-to-Demo & Sensing Transparency
-
-A presentation coach's greatest asset is scientific honesty. PitchPulse never masks simulated data as live hardware sensing:
-
-- **● Live SmartSpectra SDK Mode**: When a valid SmartSpectra API key is present, the app initializes the native C++ FFI pipeline via `koffi` and `@smartspectra/node-sdk`. The UI displays an emerald badge `[● LIVE SMARTSPECTRA SDK]` with real-time signal confidence ratings (e.g. `Quality: 88%`) and baseline lock indicators.
-- **⏳ Baseline Calibration Window**: During the first 15–20 seconds of optical rPPG video acquisition, PitchPulse displays an active countdown `[⏳ CALIBRATING BASELINE (14s/20s)]` to respect the optical blood absorption settling period.
-- **⚠️ Transparent Demo Simulation Mode**: If no API key is provided or if network authentication fails, PitchPulse activates a dynamic biological simulation engine. The UI hard-labels the mode with prominent amber badges: `[⚠️ DEMO DATA — NO LIVE SENSING]`. All demo flight logs are explicitly tagged `[DEMO DATA - SIMULATED]` in Replay and History to guarantee absolute integrity.
-- **🛡️ Strict Provenance on Ghost Take Comparisons**: PitchPulse explicitly labels provenance on comparative reviews. If either session was recorded in demo mode, an unmistakable `[⚠️ Synthetic Provenance]` notice clarifies that the comparison is illustrative workflow rehearsal rather than physical experimental data.
-- **🚫 Zero Default Fabrication**: When no pressure moment is marked or acute surge detected, PitchPulse never manufactures a flattering recovery score. It explicitly reports _"No measurable pressure moment captured"_ rather than inventing artificial stress peaks or recovery seconds.
 
 ---
 
