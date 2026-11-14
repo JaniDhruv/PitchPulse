@@ -78,19 +78,63 @@ flowchart TD
 
 ---
 
-## 👻 Flagship Features
+## 🎬 The 45–60 Second Judge Walkthrough Story
 
-### 1. "Ghost Take" Comparative Biometrics
+PitchPulse is built around a single, undeniable human story that any judge can understand with the sound turned off:
 
-PitchPulse solves the single biggest problem with conventional speech coaching: **speakers cannot look at dials while speaking, and single-session numbers don't show real progress.**
+```
+[Take 1: Raw Pressure]
+Speaker freezes on opening slide / stumbles on a tough Q&A question
+  → Hits [⚡ Mark Pressure Moment] (Spacebar)
+  → PitchPulse tracks the autonomic surge (+16 BPM spike, gaze drops to 45%)
+  → Takes 24 seconds to recover composure!
 
-1. **Take 1 (Baseline / Raw Run):** The speaker practices their raw pitch. PitchPulse records their full physiological flight log (heart rate spikes, gaze drops, breath-holds).
-2. **Take 2 (Ghost Mode Re-pitch):** The speaker clicks **"Practice Again (Ghost Mode)"**. PitchPulse renders Take 1's pulse wave as a subtle, semi-transparent **violet dashed Ghost Curve** directly behind the live solid cyan waveform!
-3. **Before & After Performance Delta Scorecard:** The Replay flight recorder generates a side-by-side comparative report:
-   - **Heart Rate Delta:** (e.g. `92 BPM → 76 BPM`, **-16 BPM calmer**)
-   - **Audience Eye Focus:** (e.g. `58% → 84%`, **+26% engagement**)
-   - **Breathing Freezes:** (e.g. `3 episodes → 0 episodes`)
-   - **Net Physiological Regulation Gain:** Quantifiable improvement score (e.g. **+28% regulation index**)
+[Autonomic Reset]
+Speaker uses the Pre-Pitch Box Breathing Pacer (14s cycles) to reset baseline tone.
+
+[Take 2: Ghost Take Rehearsal]
+Speaker re-pitches with Take 1's cardiac trace as a violet ghost curve behind their live pulse wave
+  → Encounters the same hard slide, maintains nasal breathing & lens focus
+  → Hits [⚡ Mark Pressure Moment]
+  → Heart rate barely spikes (+6 BPM) and returns to baseline in just 9 seconds!
+
+[The Measurable Outcome]
+🏆 "15 Seconds Faster Recovery After Pressure Moment!"
+Not a vague, subjective AI score — an unmistakable, scientifically grounded physiological triumph.
+```
+
+---
+
+## 🔬 Truth-to-Demo & Sensing Transparency
+
+A presentation coach's greatest asset is scientific honesty. PitchPulse never masks simulated data as live hardware sensing:
+
+- **● Live SmartSpectra SDK Mode**: When a valid SmartSpectra API key is present, the app initializes the native C++ FFI pipeline via `koffi` and `@smartspectra/node-sdk`. The UI displays an emerald badge `[● LIVE SMARTSPECTRA SDK]` with real-time signal confidence ratings (e.g. `Quality: 88%`) and baseline lock indicators.
+- **⏳ Baseline Calibration Window**: During the first 15–20 seconds of optical rPPG video acquisition, PitchPulse displays an active countdown `[⏳ CALIBRATING BASELINE (14s/20s)]` to respect the optical blood absorption settling period.
+- **⚠️ Transparent Demo Simulation Mode**: If no API key is provided or if network authentication fails, PitchPulse activates a dynamic biological simulation engine. The UI hard-labels the mode with prominent amber badges: `[⚠️ DEMO DATA — NO LIVE SENSING]`. All demo flight logs are explicitly tagged `[DEMO DATA - SIMULATED]` in Replay and History to guarantee absolute integrity.
+
+---
+
+## ⚡ Flagship Features
+
+### 1. "Ghost Take": Did Your Recovery After the Hard Part Improve?
+
+PitchPulse makes **Ghost Take** and **Pressure Moment Recovery** the focal point of speech training:
+
+- **⚡ Instant Pressure Moment Marking (Spacebar / HUD Button):** During practice, the speaker marks their pressure moments (slide transitions, complex objections).
+- **⏱️ Physiological Recovery Latency:** PitchPulse measures how many seconds it takes for heart rate to return to within 4 BPM of the pre-moment baseline, alongside gaze retention and breath stability during the critical 10-second post-stress window.
+- **👻 Real-Time Ghost Wave Overlay:** During Ghost Take, Take 1's pulse wave appears as a translucent violet reference curve on the live 60 FPS oscilloscope.
+- **🏆 Comparative Outcome Scorecard:** Replay highlights the exact second the pressure moment occurred, comparing Take 1 vs Ghost Take recovery latency side by side.
+
+### 2. Streamlined 3-Signal Live Cockpit
+
+During a live presentation, dense telemetry walls distract the speaker. PitchPulse narrows the live cockpit to **three readable, actionable signals**:
+
+1. **Pulse & Autonomic Recovery:** Live heart rate (BPM), 60 FPS plethysmogram waveform, resting baseline, and real-time recovery timer.
+2. **Audience Gaze Focus:** High-precision iris landmark reticle with centered/drifting feedback and gaze lock %.
+3. **Breath Pacing & Rhythm:** Respiratory wave, breaths/minute, inhale/exhale rhythm cues, and talking-gated stabilization.
+
+_Detailed post-flight analytics (speech pause counts, talk ratio timeline, emotion distributions) are moved to the Replay Flight Recorder where they belong._
 
 ### 2. Live Contextual Coaching Overlays
 
