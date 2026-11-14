@@ -17,6 +17,24 @@ export default function ReplayScreen({ sessionData, onBackToStudio, onPracticeWi
   const currentPulse = pulseSamples[sampleIndex]?.value || summary?.avgPulse || 72;
   const currentEye = eyeContactScores[sampleIndex] || 85;
 
+  const handleExportJson = () => {
+    const exportData = {
+      app: 'PitchPulse',
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      session: sessionData,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pitchpulse_session_${sessionData?.id || Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex-1 flex flex-col p-6 max-w-6xl mx-auto w-full space-y-6 overflow-y-auto">
       {/* Top Navigation & Actions */}
@@ -29,7 +47,16 @@ export default function ReplayScreen({ sessionData, onBackToStudio, onPracticeWi
           <span>New Pitch Session</span>
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleExportJson}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
+            title="Export full biometric flight telemetry as JSON"
+          >
+            <Download className="w-3.5 h-3.5 text-sky-400" />
+            <span>Export JSON</span>
+          </button>
+
           {onPracticeWithGhost && (
             <button
               onClick={() => onPracticeWithGhost(sessionData)}

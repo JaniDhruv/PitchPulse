@@ -6,6 +6,10 @@
 [![Built for](https://img.shields.io/badge/DEV_Challenge-Presage_SmartSpectra_SDK-ff4f81.svg)](https://dev.to/challenges/presage-2026-11-04)
 [![Platform: Electron 28+](https://img.shields.io/badge/Platform-Electron_28+_|_Node_22-47848F.svg)](https://www.electronjs.org/)
 
+<p align="center">
+  <img src="./docs/cover.png" alt="PitchPulse Banner" width="100%" />
+</p>
+
 ---
 
 ## 💡 What is PitchPulse?
@@ -82,6 +86,8 @@ PitchPulse solves the single biggest problem with conventional speech coaching: 
    * **Audience Eye Focus:** (e.g. `58% → 84%`, **+26% engagement**)
    * **Breathing Freezes:** (e.g. `3 episodes → 0 episodes`)
    * **Net Physiological Regulation Gain:** Quantifiable improvement score (e.g. **+28% regulation index**)
+
+4. **Export Flight Telemetry (.json):** With a single click in the Replay screen, speakers can export their complete synchronized time-series flight telemetry (millisecond timestamps, heart rate samples, respiratory points, and gaze coordinates) for personal data ownership and deep longitudinal tracking.
 
 ---
 
