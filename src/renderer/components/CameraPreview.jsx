@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Camera, Sparkles, AlertTriangle } from 'lucide-react';
+import { Camera, AlertTriangle } from 'lucide-react';
 import { EMOTIONS } from '../lib/constants';
+import CoachingOverlay from './CoachingOverlay';
 
 export default function CameraPreview({
   stream = null,
@@ -8,6 +9,7 @@ export default function CameraPreview({
   currentExpression = 'neutral',
   isSpeaking = false,
   isRecording = false,
+  activeNudge = null,
 }) {
   const videoRef = useRef(null);
 
@@ -34,9 +36,12 @@ export default function CameraPreview({
       {!stream && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-slate-400 p-6 text-center">
           <Camera className="w-12 h-12 text-slate-600 mb-3 animate-pulse" />
-          <h3 className="text-sm font-semibold text-slate-200">Waiting for Camera Stream...</h3>
+          <h3 className="text-sm font-semibold text-slate-200">
+            Waiting for Camera Stream...
+          </h3>
           <p className="text-xs text-slate-400 max-w-xs mt-1">
-            SmartSpectra will initialize your front webcam and extract real-time physiological vitals.
+            SmartSpectra will initialize your front webcam and extract real-time
+            physiological vitals.
           </p>
         </div>
       )}
@@ -75,14 +80,17 @@ export default function CameraPreview({
 
       {/* Recording status indicator */}
       {isRecording && (
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/60 text-red-300 backdrop-blur-md shadow-lg text-xs font-bold">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/60 text-red-300 backdrop-blur-md shadow-lg text-xs font-bold animate-pulse">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
           RECORDING SESSION
         </div>
       )}
 
+      {/* Real-time coaching overlay */}
+      <CoachingOverlay activeNudge={activeNudge} />
+
       {/* Bottom positioning hint if SDK reports issues */}
-      {validationHint && (
+      {validationHint && !activeNudge && (
         <div className="absolute bottom-4 inset-x-4 z-20 flex items-center justify-center">
           <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-500/60 text-amber-300 backdrop-blur-md text-xs font-medium shadow-xl">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
@@ -93,4 +101,3 @@ export default function CameraPreview({
     </div>
   );
 }
-
