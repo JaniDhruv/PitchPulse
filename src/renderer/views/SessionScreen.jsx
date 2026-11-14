@@ -3,12 +3,9 @@ import { Play, Square, Settings, History, Wind } from 'lucide-react';
 import CameraPreview from '../components/CameraPreview';
 import PulseCanvas from '../components/PulseCanvas';
 import BreathingCanvas from '../components/BreathingCanvas';
-import ComposureGauge from '../components/ComposureGauge';
 import EyeContactMeter from '../components/EyeContactMeter';
-import SpeakingTimeline from '../components/SpeakingTimeline';
 import BreathingPacer from '../components/BreathingPacer';
 import {
-  calculateLiveComposure,
   calculateEyeContactScore,
   calculateSessionSummary,
 } from '../lib/scoring';
@@ -52,18 +49,24 @@ export default function SessionScreen({
   const [validationHint, setValidationHint] = useState('');
   const [showPacer, setShowPacer] = useState(false);
 
-  // Live Metric States
-  const [liveBpm, setLiveBpm] = useState(74);
+  // Sensing Mode & Hardware Integrity State
+  const [sensingMode, setSensingMode] = useState('initializing'); // 'initializing' | 'live' | 'calibrating' | 'demo'
+  const [cardioConfidence, setCardioConfidence] = useState(0);
+  const [calibrationSec, setCalibrationSec] = useState(0);
+
+  // Hero Outcome: Pressure Moment & Recovery
+  const [pressureMoment, setPressureMoment] = useState(null);
+  const [baselinePulse, setBaselinePulse] = useState(72);
+
+  // Live 3-Signal Telemetry States
+  const [liveBpm, setLiveBpm] = useState(72);
   const [liveBreathRate, setLiveBreathRate] = useState(15);
-  const [liveComposure, setLiveComposure] = useState(82);
-  const [isHrvLocked, setIsHrvLocked] = useState(false);
   const [eyeContactScore, setEyeContactScore] = useState(88);
   const [isGazeCentered, setIsGazeCentered] = useState(true);
   const [gazeOffset, setGazeOffset] = useState({ x: 0, y: 0 });
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentExpression, setCurrentExpression] = useState('neutral');
   const [isBreathHolding, setIsBreathHolding] = useState(false);
-  const [talkRatio, setTalkRatio] = useState(70);
   const [activeNudge, setActiveNudge] = useState(null);
 
   // Fast mutable ring buffers for 60fps canvas drawing (0% React re-render lag)
@@ -86,6 +89,7 @@ export default function SessionScreen({
     expressionHistory: [],
     eyeContactScores: [],
     coachingMoments: [],
+    pressureMoments: [],
     startTime: null,
   });
 
@@ -94,12 +98,12 @@ export default function SessionScreen({
   const breathHoldTimerRef = useRef(0);
   const nudgeCooldownRef = useRef(0);
   const durationCounterRef = useRef(0);
+  const stressSurgeRef = useRef(0);
 
   // Mutable ref to current metrics to avoid interval tearing & stale closures
   const latestMetricsRef = useRef({
-    liveBpm: 74,
+    liveBpm: 72,
     liveBreathRate: 15,
-    liveComposure: 82,
     eyeContactScore: 88,
     isSpeaking: false,
     currentExpression: 'neutral',
@@ -137,7 +141,7 @@ export default function SessionScreen({
           sum += dataArray[i];
         }
         const avg = sum / dataArray.length;
-        const isAudible = avg > 14; // Speech energy threshold
+        const isAudible = avg > 14;
 
         if (isAudible !== latestMetricsRef.current.isSpeaking) {
           setIsSpeaking(isAudible);
@@ -189,6 +193,7 @@ export default function SessionScreen({
         const modules = await getSdkModules();
         if (modules && modules.SmartSpectraSDK && !isCancelled) {
           try {
+            setSensingMode('calibrating');
             const {
               SmartSpectraSDK,
               cardioMetrics,
@@ -223,6 +228,16 @@ export default function SessionScreen({
               if (!isCancelled) setValidationHint(hint || '');
             });
 
+            let calibCount = 0;
+            const calibInterval = setInterval(() => {
+              calibCount += 1;
+              if (calibCount <= 20) {
+                setCalibrationSec(calibCount);
+              } else {
+                clearInterval(calibInterval);
+              }
+            }, 1000);
+
             sdk.on('metrics', (buf) => {
               if (!decodeMetrics || isCancelled) return;
               try {
@@ -248,7 +263,8 @@ export default function SessionScreen({
         }
       }
 
-      // If SDK direct start failed or no key yet, activate organic responsive telemetry
+      // If SDK direct start failed or no key provided, activate demo simulation mode
+      setSensingMode('demo');
       startSimulator();
     }
 
@@ -279,15 +295,18 @@ export default function SessionScreen({
   // High-fidelity dynamic organic simulation for live biofeedback
   const startSimulator = () => {
     let phase = 0;
+    let tickCount = 0;
+
     simulationIntervalRef.current = setInterval(() => {
       phase += 0.08;
+      tickCount += 1;
 
-      // 1. Dynamic cardiac PPG waveform
+      // 1. Dynamic cardiac PPG waveform (60fps canvas feed)
       const ppg = Math.sin(phase * 4.2) * 0.7 + Math.sin(phase * 8.4) * 0.3;
       pulseBufferRef.current.push(ppg);
       if (pulseBufferRef.current.length > 120) pulseBufferRef.current.shift();
 
-      // 2. Dynamic respiratory waveform
+      // 2. Dynamic respiratory waveform (60fps canvas feed)
       const resp = Math.sin(phase * 0.85);
       breathingBufferRef.current.push(resp);
       if (breathingBufferRef.current.length > 120)
@@ -304,47 +323,44 @@ export default function SessionScreen({
           ghostPulseBufferRef.current.shift();
       }
 
-      // 4. Organically fluctuating vitals (Respiratory Sinus Arrhythmia)
-      const simBpm = Math.round(
-        73 +
-          Math.sin(phase * 0.35) * 5 +
-          (latestMetricsRef.current.isSpeaking ? 3 : 0),
-      );
-      const simBreath = Math.round(15 + Math.sin(phase * 0.2) * 2);
+      // Update React state at comfortable 500ms intervals (every 15 ticks) to avoid React render thrashing
+      if (tickCount % 15 === 0) {
+        // Natural respiratory sinus arrhythmia + stress surge decay
+        const surge = stressSurgeRef.current;
+        if (stressSurgeRef.current > 0) {
+          stressSurgeRef.current = Math.max(0, stressSurgeRef.current - 1.2);
+        }
 
-      // 5. Naturally modulating gaze and eye contact
-      const gazeDrift = Math.sin(phase * 0.18) * 5;
-      const simEyeScore = Math.max(
-        72,
-        Math.min(96, Math.round(87 + gazeDrift)),
-      );
-      const simGazeCentered = Math.abs(gazeDrift) < 3.8;
-      const simGazeOffset = {
-        x: Math.round(gazeDrift * 2.2),
-        y: Math.round(Math.cos(phase * 0.14) * 3),
-      };
+        const simBpm = Math.round(
+          72 +
+            Math.sin(phase * 0.35) * 3 +
+            (latestMetricsRef.current.isSpeaking ? 3 : 0) +
+            surge,
+        );
+        const simBreath = Math.round(15 + Math.sin(phase * 0.2) * 2);
 
-      // 6. Dynamic Live Composure calculation
-      const pulseHist = pulseBufferRef.current.slice(-15);
-      const compResult = calculateLiveComposure({
-        pulseRate: simBpm,
-        pulseHistory: pulseHist,
-        breathingRate: simBreath,
-        expressions: { [latestMetricsRef.current.currentExpression]: 1 },
-        durationSec: durationCounterRef.current,
-      });
+        // Modulating gaze drift
+        const gazeDrift = Math.sin(phase * 0.18) * 5;
+        const simEyeScore = Math.max(
+          72,
+          Math.min(96, Math.round(87 + gazeDrift)),
+        );
+        const simGazeCentered = Math.abs(gazeDrift) < 3.8;
+        const simGazeOffset = {
+          x: Math.round(gazeDrift * 2.2),
+          y: Math.round(Math.cos(phase * 0.14) * 3),
+        };
 
-      setLiveBpm(simBpm);
-      setLiveBreathRate(simBreath);
-      setLiveComposure(compResult.score);
-      setEyeContactScore(simEyeScore);
-      setIsGazeCentered(simGazeCentered);
-      setGazeOffset(simGazeOffset);
+        setLiveBpm(simBpm);
+        setLiveBreathRate(simBreath);
+        setEyeContactScore(simEyeScore);
+        setIsGazeCentered(simGazeCentered);
+        setGazeOffset(simGazeOffset);
 
-      latestMetricsRef.current.liveBpm = simBpm;
-      latestMetricsRef.current.liveBreathRate = simBreath;
-      latestMetricsRef.current.liveComposure = compResult.score;
-      latestMetricsRef.current.eyeContactScore = simEyeScore;
+        latestMetricsRef.current.liveBpm = simBpm;
+        latestMetricsRef.current.liveBreathRate = simBreath;
+        latestMetricsRef.current.eyeContactScore = simEyeScore;
+      }
     }, 33);
   };
 
@@ -359,6 +375,10 @@ export default function SessionScreen({
           const bpm = Math.round(last.value);
           setLiveBpm(bpm);
           latestMetricsRef.current.liveBpm = bpm;
+          if (last.confidence != null) {
+            setCardioConfidence(Math.round(last.confidence));
+          }
+          setSensingMode('live');
         }
       }
       if (metrics.cardio.arterialPressureTrace?.length > 0) {
@@ -375,7 +395,6 @@ export default function SessionScreen({
         if (lastHrv?.value) {
           latestMetricsRef.current.rmssd = lastHrv.value;
           latestMetricsRef.current.hrvConfidence = lastHrv.confidence || 50;
-          setIsHrvLocked(true);
         }
       }
     }
@@ -475,6 +494,61 @@ export default function SessionScreen({
     }, 4200);
   };
 
+  // Mark Pressure Moment (Spacebar or Button)
+  const markPressureMoment = () => {
+    if (!isRecording || pressureMoment) return;
+    const currentSec = durationCounterRef.current;
+    const currentPulse = latestMetricsRef.current.liveBpm;
+
+    // Calculate baseline from preceding samples
+    const samples = sessionDataRef.current.pulseSamples;
+    let base = currentPulse - 3;
+    if (samples.length >= 3) {
+      const recent = samples.slice(-10);
+      base = Math.round(
+        recent.reduce((a, b) => a + (b.value || b), 0) / recent.length,
+      );
+    }
+    setBaselinePulse(base);
+
+    const momentObj = {
+      timeSec: currentSec,
+      baselineBpm: base,
+      peakBpm: currentPulse + 6,
+      recoverySec: null,
+      status: 'active',
+    };
+
+    setPressureMoment(momentObj);
+    sessionDataRef.current.pressureMoments.push(momentObj);
+
+    // In demo mode, trigger simulated physiological stress response (+16 BPM surge)
+    if (sensingMode === 'demo') {
+      stressSurgeRef.current = 16;
+    }
+
+    triggerCoachingNudge(
+      {
+        category: 'pulse',
+        icon: '⚡',
+        text: 'Pressure Moment marked! Inhale 4s, exhale 4s — tracking autonomic recovery.',
+      },
+      currentSec,
+    );
+  };
+
+  // Spacebar hotkey listener for instantaneous pressure moment marking
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Space' && isRecording && !pressureMoment) {
+        e.preventDefault();
+        markPressureMoment();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isRecording, pressureMoment]);
+
   // Recording timer: clean side-effect execution inside timer callback
   useEffect(() => {
     let timer = null;
@@ -506,16 +580,7 @@ export default function SessionScreen({
           sessionDataRef.current.hrvSamples.push(current.rmssd);
         }
 
-        // 2. Dynamic talk ratio calculation
-        const events = sessionDataRef.current.speakingEvents;
-        const talkCount = events.filter((e) => e.talking).length;
-        const newTalkRatio =
-          events.length > 0
-            ? Math.round((talkCount / events.length) * 100)
-            : 70;
-        setTalkRatio(newTalkRatio);
-
-        // 3. Breath holding detection
+        // 2. Breath holding detection
         const bBuffer = breathingBufferRef.current;
         if (bBuffer.length >= 30 && !current.isSpeaking) {
           const recent = bBuffer.slice(-30);
@@ -535,25 +600,43 @@ export default function SessionScreen({
           setIsBreathHolding(false);
         }
 
-        // 4. Dynamic Live Composure calculation with HRV warm-up fallback
-        const pulseHistory = sessionDataRef.current.pulseSamples.map(
-          (p) => p.value,
-        );
-        const compResult = calculateLiveComposure({
-          pulseRate: current.liveBpm,
-          pulseHistory,
-          breathingRate: current.liveBreathRate,
-          expressions: { [current.currentExpression]: 1 },
-          rmssd: current.rmssd,
-          hrvConfidence: current.hrvConfidence,
-          durationSec: newSec,
-        });
-        setLiveComposure(compResult.score);
-        if (compResult.isHrvLocked) {
-          setIsHrvLocked(true);
+        // 3. Track Pressure Moment Recovery Latency
+        if (pressureMoment && pressureMoment.status === 'active') {
+          const elapsed = newSec - pressureMoment.timeSec;
+          const currentBpm = current.liveBpm;
+
+          if (currentBpm > pressureMoment.peakBpm) {
+            setPressureMoment((prev) =>
+              prev ? { ...prev, peakBpm: currentBpm } : prev,
+            );
+          }
+
+          if (elapsed >= 3 && currentBpm <= pressureMoment.baselineBpm + 3) {
+            const recSec = elapsed;
+            setPressureMoment((prev) =>
+              prev
+                ? { ...prev, recoverySec: recSec, status: 'recovered' }
+                : prev,
+            );
+            if (sessionDataRef.current.pressureMoments.length > 0) {
+              sessionDataRef.current.pressureMoments[0].recoverySec = recSec;
+              sessionDataRef.current.pressureMoments[0].peakBpm = Math.max(
+                sessionDataRef.current.pressureMoments[0].peakBpm || 0,
+                currentBpm,
+              );
+            }
+            triggerCoachingNudge(
+              {
+                category: 'positive',
+                icon: '✅',
+                text: `Equilibrium restored! Heart rate recovered to baseline in ${recSec}s.`,
+              },
+              newSec,
+            );
+          }
         }
 
-        // 5. Contextual Coaching Nudge triggers
+        // 4. Contextual Coaching Nudge triggers
         if (nudgeCooldownRef.current > 0) {
           nudgeCooldownRef.current -= 1;
         } else {
@@ -575,7 +658,10 @@ export default function SessionScreen({
               },
               newSec,
             );
-          } else if (current.liveBpm > 98) {
+          } else if (
+            current.liveBpm > 98 &&
+            (!pressureMoment || pressureMoment.status !== 'active')
+          ) {
             triggerCoachingNudge(
               {
                 category: 'pulse',
@@ -596,32 +682,21 @@ export default function SessionScreen({
               },
               newSec,
             );
-          } else if (
-            newSec > 15 &&
-            compResult.score >= 86 &&
-            current.eyeContactScore >= 80 &&
-            newSec % 25 === 0
-          ) {
-            triggerCoachingNudge(
-              {
-                category: 'positive',
-                icon: '✨',
-                text: 'Terrific composure and gaze lock! Maintain this rhythm.',
-              },
-              newSec,
-            );
           }
         }
 
-        // 6. Update UI duration display
+        // 5. Update UI duration display
         setRecordDurationSec(newSec);
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isRecording]);
+  }, [isRecording, pressureMoment]);
 
   const startActualRecording = () => {
     durationCounterRef.current = 0;
+    stressSurgeRef.current = 0;
+    setPressureMoment(null);
+    setBaselinePulse(latestMetricsRef.current.liveBpm || 72);
     sessionDataRef.current = {
       pulseSamples: [],
       breathingSamples: [],
@@ -631,6 +706,7 @@ export default function SessionScreen({
       expressionHistory: [],
       eyeContactScores: [],
       coachingMoments: [],
+      pressureMoments: [],
       startTime: Date.now(),
     };
     setRecordDurationSec(0);
@@ -644,14 +720,19 @@ export default function SessionScreen({
 
   const handleStopRecording = async () => {
     setIsRecording(false);
-    const summary = calculateSessionSummary({
-      ...sessionDataRef.current,
-      durationSec: durationCounterRef.current || 15,
-    });
+    const summary = calculateSessionSummary(
+      {
+        ...sessionDataRef.current,
+        durationSec: durationCounterRef.current || 15,
+      },
+      ghostTake,
+    );
 
     const fullSession = {
       id: Date.now(),
       timestamp: Date.now(),
+      isDemoMode: sensingMode === 'demo',
+      sensingMode,
       summary,
       ...sessionDataRef.current,
     };
@@ -683,9 +764,21 @@ export default function SessionScreen({
           <div>
             <h1 className="text-base font-bold text-slate-100 flex items-center gap-2">
               PitchPulse
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950 border border-sky-500/40 text-sky-400">
-                Presage SmartSpectra SDK
-              </span>
+              {sensingMode === 'live' && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400">
+                  ● Presage SmartSpectra SDK
+                </span>
+              )}
+              {sensingMode === 'calibrating' && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950 border border-sky-500/40 text-sky-400">
+                  ⏳ Calibrating SDK Baseline
+                </span>
+              )}
+              {sensingMode === 'demo' && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 border border-amber-500/40 text-amber-400">
+                  ⚠️ Demo Mode (No Live Key)
+                </span>
+              )}
             </h1>
             <p className="text-[11px] text-slate-400">
               Contactless Biometric Presentation Coach
@@ -696,7 +789,7 @@ export default function SessionScreen({
         {ghostTake && (
           <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-semibold shadow-lg">
             <span>
-              👻 Ghost Mode Active: Comparing with Take 1 (
+              👻 Ghost Take Active: Comparing with Take 1 (
               {ghostTake.summary?.avgPulse || 88} BPM)
             </span>
             {onClearGhost && (
@@ -737,11 +830,11 @@ export default function SessionScreen({
         </div>
       </div>
 
-      {/* Main Studio Grid */}
+      {/* Main Studio Grid: Narrowed, Readable 3-Signal Cockpit */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0">
-        {/* Left Area: Camera Preview & Speech Timeline (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col space-y-3 min-h-[360px]">
-          <div className="flex-1 relative rounded-3xl overflow-hidden min-h-[280px]">
+        {/* Left Area: Camera Preview & Tactical Controls (7 cols) */}
+        <div className="lg:col-span-7 flex flex-col min-h-[380px]">
+          <div className="flex-1 relative rounded-3xl overflow-hidden min-h-[360px]">
             <CameraPreview
               stream={stream}
               validationHint={validationHint}
@@ -749,22 +842,32 @@ export default function SessionScreen({
               isSpeaking={isSpeaking}
               isRecording={isRecording}
               activeNudge={activeNudge}
+              sensingMode={sensingMode}
+              cardioConfidence={cardioConfidence}
+              calibrationSec={calibrationSec}
+              pressureMoment={pressureMoment}
+              onMarkPressureMoment={markPressureMoment}
+            />
+          </div>
+        </div>
+
+        {/* Right Area: The 3 Readable Signals (5 cols) */}
+        <div className="lg:col-span-5 flex flex-col space-y-3 min-h-0 justify-between">
+          {/* Signal 1: Cardiac & Autonomic Recovery */}
+          <div className="flex-1 min-h-[145px]">
+            <PulseCanvas
+              bufferRef={pulseBufferRef}
+              ghostBufferRef={ghostTake ? ghostPulseBufferRef : null}
+              ghostAvgBpm={ghostTake?.summary?.avgPulse}
+              liveBpm={liveBpm}
+              isRecording={isRecording}
+              pressureMoment={pressureMoment}
+              restingBaselineBpm={baselinePulse}
             />
           </div>
 
-          <SpeakingTimeline
-            speakingHistory={sessionDataRef.current.speakingEvents}
-            talkRatio={talkRatio}
-            isCurrentlySpeaking={isSpeaking}
-            pauseWarning={false}
-          />
-        </div>
-
-        {/* Right Area: Physiological Telemetry Cockpit (5 cols) */}
-        <div className="lg:col-span-5 flex flex-col space-y-3">
-          {/* Top Gauges: Composure & Eye Contact */}
-          <div className="grid grid-cols-2 gap-3">
-            <ComposureGauge score={liveComposure} isHrvLocked={isHrvLocked} />
+          {/* Signal 2: Audience Gaze Focus */}
+          <div className="min-h-[155px]">
             <EyeContactMeter
               score={eyeContactScore}
               isCentered={isGazeCentered}
@@ -772,25 +875,14 @@ export default function SessionScreen({
             />
           </div>
 
-          {/* Real-time Oscilloscope Waveforms (HTML5 Canvas 60 FPS) */}
-          <div className="flex-1 flex flex-col space-y-3 min-h-[220px]">
-            <div className="flex-1 min-h-[110px]">
-              <PulseCanvas
-                bufferRef={pulseBufferRef}
-                ghostBufferRef={ghostTake ? ghostPulseBufferRef : null}
-                ghostAvgBpm={ghostTake?.summary?.avgPulse}
-                liveBpm={liveBpm}
-                isRecording={isRecording}
-              />
-            </div>
-            <div className="flex-1 min-h-[110px]">
-              <BreathingCanvas
-                bufferRef={breathingBufferRef}
-                liveRate={liveBreathRate}
-                isBreathHolding={isBreathHolding}
-                isSpeaking={isSpeaking}
-              />
-            </div>
+          {/* Signal 3: Breath Pacing & Rhythm */}
+          <div className="flex-1 min-h-[145px]">
+            <BreathingCanvas
+              bufferRef={breathingBufferRef}
+              liveRate={liveBreathRate}
+              isBreathHolding={isBreathHolding}
+              isSpeaking={isSpeaking}
+            />
           </div>
         </div>
       </div>
@@ -812,13 +904,38 @@ export default function SessionScreen({
                 {String(recordDurationSec % 60).padStart(2, '0')}
               </span>
               <span className="text-xs text-slate-400">
-                Capturing Biometric Telemetry
+                {pressureMoment
+                  ? '⚡ Tracking Recovery'
+                  : 'Capturing Biometric Telemetry'}
               </span>
             </div>
           ) : (
-            <div className="text-xs text-slate-400 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-              <span>All Sensors Initialized & Ready</span>
+            <div className="text-xs flex items-center gap-2">
+              {sensingMode === 'live' && (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                  <span className="text-slate-300 font-medium">
+                    SmartSpectra SDK Active — Contactless Camera Vitals Ready
+                  </span>
+                </>
+              )}
+              {sensingMode === 'calibrating' && (
+                <>
+                  <div className="w-2.5 h-2.5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sky-300 font-medium">
+                    Calibrating Physiological Baseline ({calibrationSec}s / 20s)
+                  </span>
+                </>
+              )}
+              {sensingMode === 'demo' && (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                  <span className="text-amber-300 font-medium">
+                    Demo Mode Active — Enter SmartSpectra API Key in Settings
+                    for Live Sensing
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>

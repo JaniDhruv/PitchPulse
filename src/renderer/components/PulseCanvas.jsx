@@ -13,6 +13,8 @@ export default function PulseCanvas({
   ghostAvgBpm = null,
   isRecording = false,
   liveBpm = 72,
+  pressureMoment = null,
+  restingBaselineBpm = null,
 }) {
   const canvasRef = useRef(null);
   const animatedBpm = useAnimatedValue(liveBpm, { speed: 0.12 });
@@ -201,13 +203,31 @@ export default function PulseCanvas({
           <Heart className="w-3 h-3 fill-sky-400/80 text-sky-300" />
         </div>
         <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-          Pulse Plethysmogram
+          Pulse & Recovery
         </span>
-        <span
-          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${rhythmColor}`}
-        >
-          {rhythmLabel}
-        </span>
+        {pressureMoment ? (
+          pressureMoment.status === 'recovered' ? (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-950/80 border-emerald-500/50 text-emerald-300 shadow-sm animate-pulse">
+              ✅ Recovered in {pressureMoment.recoverySec}s
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-amber-950/80 border-amber-500/50 text-amber-300 shadow-sm animate-pulse">
+              ⚡ Recovery Tracking (+
+              {Math.max(
+                0,
+                pressureMoment.peakBpm - pressureMoment.baselineBpm,
+              )}{' '}
+              BPM)
+            </span>
+          )
+        ) : (
+          <span
+            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${rhythmColor}`}
+          >
+            {rhythmLabel}
+            {restingBaselineBpm ? ` • Base: ${restingBaselineBpm}` : ''}
+          </span>
+        )}
       </div>
 
       {/* Top Right Live Telemetry */}

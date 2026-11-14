@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Camera, AlertTriangle } from 'lucide-react';
+import { Camera, AlertTriangle, Zap, CheckCircle2 } from 'lucide-react';
 import { EMOTIONS } from '../lib/constants';
 import CoachingOverlay from './CoachingOverlay';
 
@@ -10,6 +10,11 @@ export default function CameraPreview({
   isSpeaking = false,
   isRecording = false,
   activeNudge = null,
+  sensingMode = 'demo', // 'live' | 'calibrating' | 'demo'
+  cardioConfidence = 0,
+  calibrationSec = 0,
+  pressureMoment = null,
+  onMarkPressureMoment = null,
 }) {
   const videoRef = useRef(null);
 
@@ -22,7 +27,7 @@ export default function CameraPreview({
   const emotionInfo = EMOTIONS[currentExpression] || EMOTIONS.neutral;
 
   return (
-    <div className="relative w-full h-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center">
+    <div className="relative w-full h-full bg-slate-950 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center">
       {/* Video element */}
       <video
         ref={videoRef}
@@ -78,19 +83,101 @@ export default function CameraPreview({
         )}
       </div>
 
-      {/* Recording status indicator */}
-      {isRecording && (
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/60 text-red-300 backdrop-blur-md shadow-lg text-xs font-bold animate-pulse">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-          RECORDING SESSION
-        </div>
-      )}
+      {/* Top Right: Sensing Mode & Hardware Status Badge */}
+      <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
+        {sensingMode === 'live' && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 backdrop-blur-md shadow-lg text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>● LIVE SMARTSPECTRA SDK</span>
+            {cardioConfidence > 0 && (
+              <span className="text-[10px] text-emerald-400/80 font-mono">
+                ({cardioConfidence}% signal)
+              </span>
+            )}
+          </div>
+        )}
+
+        {sensingMode === 'calibrating' && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-950/90 border border-sky-500/60 text-sky-300 backdrop-blur-md shadow-lg text-xs font-bold animate-pulse">
+            <div className="w-2.5 h-2.5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+            <span>CALIBRATING BASELINE ({calibrationSec}s / 20s)</span>
+          </div>
+        )}
+
+        {sensingMode === 'demo' && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/90 border border-amber-500/60 text-amber-300 backdrop-blur-md shadow-lg text-xs font-bold">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>⚠️ DEMO DATA — NO LIVE SENSING</span>
+          </div>
+        )}
+
+        {isRecording && (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/60 text-red-300 backdrop-blur-md shadow-lg text-xs font-bold animate-pulse">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+            RECORDING SESSION
+          </div>
+        )}
+      </div>
 
       {/* Real-time coaching overlay */}
       <CoachingOverlay activeNudge={activeNudge} />
 
+      {/* Pressure Moment Marking & Recovery HUD */}
+      {isRecording && (
+        <div className="absolute bottom-5 inset-x-4 z-30 flex flex-col items-center justify-center gap-2">
+          {pressureMoment ? (
+            <div
+              className={`flex items-center gap-2 px-4 py-2 rounded-2xl backdrop-blur-xl border shadow-2xl transition-all duration-300 ${
+                pressureMoment.status === 'recovered'
+                  ? 'bg-emerald-950/90 border-emerald-500/70 text-emerald-200 shadow-emerald-500/20'
+                  : 'bg-amber-950/90 border-amber-500/70 text-amber-200 shadow-amber-500/20 animate-pulse'
+              }`}
+            >
+              {pressureMoment.status === 'recovered' ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-black tracking-wide">
+                    RECOVERED IN {pressureMoment.recoverySec}s! Baseline
+                    Restored ({pressureMoment.baselineBpm} BPM)
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 text-amber-400 animate-bounce" />
+                  <span className="text-xs font-black tracking-wide">
+                    ⚡ PRESSURE MOMENT ACTIVE — Tracking Autonomic Recovery...
+                  </span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-black/40 text-amber-300">
+                    Spike: +
+                    {Math.max(
+                      0,
+                      pressureMoment.peakBpm - pressureMoment.baselineBpm,
+                    )}{' '}
+                    BPM
+                  </span>
+                </>
+              )}
+            </div>
+          ) : (
+            onMarkPressureMoment && (
+              <button
+                onClick={onMarkPressureMoment}
+                className="group flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-2xl shadow-amber-500/30 transition-all cursor-pointer transform hover:scale-105 active:scale-95"
+                title="Mark the moment you encounter high pressure (stumble, complex question) to measure physiological recovery"
+              >
+                <Zap className="w-4 h-4 fill-slate-950 group-hover:animate-bounce" />
+                <span>Mark Pressure Moment</span>
+                <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/20 text-slate-900 border border-slate-900/30">
+                  Space
+                </span>
+              </button>
+            )
+          )}
+        </div>
+      )}
+
       {/* Bottom positioning hint if SDK reports issues */}
-      {validationHint && !activeNudge && (
+      {validationHint && !activeNudge && !isRecording && (
         <div className="absolute bottom-4 inset-x-4 z-20 flex items-center justify-center">
           <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-500/60 text-amber-300 backdrop-blur-md text-xs font-medium shadow-xl">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
