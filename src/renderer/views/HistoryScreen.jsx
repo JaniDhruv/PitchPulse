@@ -175,6 +175,11 @@ export default function HistoryScreen({ onBack, onSelectSession }) {
                           <Sparkles className="w-2.5 h-2.5" /> Ghost Take
                         </span>
                       )}
+                      {sess.isDemoMode && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          Demo Run
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 text-[11px] text-slate-400 font-mono">
                       <span className="flex items-center gap-1">
@@ -187,6 +192,12 @@ export default function HistoryScreen({ onBack, onSelectSession }) {
                       <span className="flex items-center gap-1 text-rose-300">
                         ♥ {avgPulse} BPM
                       </span>
+                      {sess.summary?.recoveryStats && (
+                        <span className="flex items-center gap-1 text-amber-300">
+                          ⚡ {sess.summary.recoveryStats.recoveryLatencySec}s
+                          rec
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -57,6 +57,8 @@ export default function App() {
         take1Pulse: ghostTake.summary?.avgPulse || 88,
         take1EyeContact: ghostTake.summary?.subScores?.eyeContact || 65,
         take1Breath: ghostTake.summary?.avgBreath || 18,
+        take1RecoverySec:
+          ghostTake.summary?.recoveryStats?.recoveryLatencySec || 22,
         take1Date: ghostTake.timestamp || Date.now(),
       };
     }

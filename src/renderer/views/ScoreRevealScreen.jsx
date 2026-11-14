@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Sparkles, Heart, Eye, Mic } from 'lucide-react';
+import { ArrowRight, Sparkles, Heart, Eye, Mic, Zap } from 'lucide-react';
 
 /**
  * Cinematic Score Reveal Screen.
@@ -9,7 +9,7 @@ import { ArrowRight, Sparkles, Heart, Eye, Mic } from 'lucide-react';
 export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
   const [displayedScore, setDisplayedScore] = useState(0);
   const [isGradeRevealed, setIsGradeRevealed] = useState(false);
-  const [autoTimer, setAutoTimer] = useState(5);
+  const [autoTimer, setAutoTimer] = useState(6);
 
   const onContinueRef = useRef(onContinueToReplay);
   useEffect(() => {
@@ -22,6 +22,7 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
   const avgPulse = sessionData?.summary?.avgPulse || 74;
   const eyeScore = sessionData?.summary?.subScores?.eyeContact || 85;
   const talkRatio = sessionData?.summary?.talkRatio || 72;
+  const recoveryStats = sessionData?.summary?.recoveryStats;
 
   // Grade badge color themes
   const gradeThemes = {
@@ -176,6 +177,35 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
             </div>
           )}
         </div>
+
+        {/* Hero Outcome: Autonomic Recovery */}
+        {recoveryStats && (
+          <div className="w-full max-w-md p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-indigo-950/60 border border-amber-500/40 flex items-center justify-between shadow-xl">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-400">
+                <Zap className="w-4 h-4 fill-amber-400" />
+              </div>
+              <div className="text-left">
+                <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">
+                  Autonomic Recovery
+                </span>
+                <span className="text-xs font-bold text-slate-200">
+                  {recoveryStats.recoveryLatencySec}s return to baseline
+                </span>
+              </div>
+            </div>
+
+            {recoveryStats.ghostComparisonDelta ? (
+              <span className="text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm animate-pulse">
+                {recoveryStats.ghostComparisonDelta.summaryText}
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                +{recoveryStats.bpmSpike} BPM Spike
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Quick 3-Pillar Highlight Grid */}
         <div className="grid grid-cols-3 gap-3 w-full max-w-md">

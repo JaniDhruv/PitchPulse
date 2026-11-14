@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Activity,
   AlertTriangle,
+  Zap,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -21,6 +22,7 @@ import {
   Area,
   ComposedChart,
 } from 'recharts';
+import SpeakingTimeline from '../components/SpeakingTimeline';
 
 export default function ReplayScreen({
   sessionData,
@@ -88,6 +90,17 @@ export default function ReplayScreen({
     }
     return highest;
   }, [chartData]);
+
+  // Extract recovery statistics and primary pressure moment timestamp
+  const recoveryStats = summary?.recoveryStats;
+  const pressureMomentTime = useMemo(() => {
+    return (
+      recoveryStats?.timeSec ??
+      sessionData?.pressureMoments?.[0]?.timeSec ??
+      peakPulseMoment?.second ??
+      null
+    );
+  }, [recoveryStats, sessionData, peakPulseMoment]);
 
   // Compute current values at scrubber timestamp
   const activePoint = useMemo(() => {
@@ -157,6 +170,23 @@ export default function ReplayScreen({
         </div>
       </div>
 
+      {/* Truth-to-Demo Mode Transparency Banner */}
+      {sessionData?.isDemoMode && (
+        <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-500/40 flex items-center justify-between text-xs text-amber-200 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>Demo Telemetry Mode:</strong> This flight log was recorded
+              in simulation mode. Live contactless optical vital sensing is
+              active when a SmartSpectra API key is configured in Settings.
+            </span>
+          </div>
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-900/80 border border-amber-500/40 text-amber-300">
+            Synthetic Run
+          </span>
+        </div>
+      )}
+
       {/* Hero Score Banner */}
       <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/60 border border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-5">
@@ -213,6 +243,107 @@ export default function ReplayScreen({
           </div>
         </div>
       </div>
+
+      {/* Hero Outcome: Autonomic Recovery Under Pressure */}
+      {recoveryStats && (
+        <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-indigo-950/60 border border-amber-500/40 shadow-2xl space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-400">
+                <Zap className="w-4 h-4 fill-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-100 flex items-center gap-2">
+                  Autonomic Recovery Under Pressure
+                  {pressureMomentTime != null && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Marked @ {pressureMomentTime}s
+                    </span>
+                  )}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Measuring physiological resilience: how quickly heart rate and
+                  gaze restabilize after high stress.
+                </p>
+              </div>
+            </div>
+
+            {recoveryStats.ghostComparisonDelta ? (
+              <span className="text-xs font-mono font-black px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg animate-pulse">
+                {recoveryStats.ghostComparisonDelta.summaryText}
+              </span>
+            ) : (
+              <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                {recoveryStats.recoveryLatencySec}s Recovery Latency
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">
+                Pre-Stress Baseline
+              </span>
+              <span className="text-lg font-mono font-bold text-slate-100 mt-1 block">
+                {recoveryStats.baselineBpm} BPM
+              </span>
+              <span className="text-[10px] text-slate-500">
+                Resting cardiac tone
+              </span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">
+                Stress Surge Spike
+              </span>
+              <span className="text-lg font-mono font-bold text-rose-400 mt-1 block">
+                +{recoveryStats.bpmSpike} BPM
+              </span>
+              <span className="text-[10px] text-slate-500">
+                Peak {recoveryStats.peakBpm} BPM
+              </span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">
+                Recovery Latency
+              </span>
+              <span className="text-lg font-mono font-bold text-sky-400 mt-1 block">
+                {recoveryStats.recoveryLatencySec} seconds
+              </span>
+              <span className="text-[10px] text-slate-500">
+                Time to return to baseline
+              </span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">
+                Stress Gaze Retention
+              </span>
+              <span className="text-lg font-mono font-bold text-indigo-400 mt-1 block">
+                {recoveryStats.gazeRetentionPct}%
+              </span>
+              <span className="text-[10px] text-slate-500">
+                Audience eye lock in 10s window
+              </span>
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between text-xs">
+            <span className="text-slate-300 font-medium">
+              {recoveryStats.recoveryVerdict}
+            </span>
+            {pressureMomentTime != null && (
+              <button
+                onClick={() => setScrubberSec(pressureMomentTime)}
+                className="text-amber-400 hover:text-amber-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+              >
+                <Zap className="w-3 h-3" /> Inspect on chart →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Side-by-Side "Ghost Take" Comparative Scorecard */}
       {sessionData?.ghostComparison && (
@@ -334,7 +465,7 @@ export default function ReplayScreen({
       {/* Interactive Recharts Waveform Flight Replay */}
       <div className="bg-slate-900 border border-slate-800/80 rounded-3xl p-5 shadow-2xl space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-sky-400" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
@@ -342,7 +473,18 @@ export default function ReplayScreen({
             </h3>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {pressureMomentTime != null && (
+              <button
+                onClick={() => setScrubberSec(pressureMomentTime)}
+                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-amber-950/70 border border-amber-500/40 text-amber-300 text-[11px] font-semibold hover:bg-amber-900/60 transition-colors cursor-pointer"
+                title="Jump scrubber to pressure moment"
+              >
+                <Zap className="w-3 h-3 text-amber-400" />
+                <span>Pressure Moment @ {pressureMomentTime}s</span>
+              </button>
+            )}
+
             {peakPulseMoment && (
               <button
                 onClick={() => setScrubberSec(peakPulseMoment.second)}
@@ -350,10 +492,7 @@ export default function ReplayScreen({
                 title="Jump scrubber to peak heart rate spike"
               >
                 <AlertTriangle className="w-3 h-3 text-red-400" />
-                <span>
-                  Peak Stress Spike: {peakPulseMoment.pulse} BPM @{' '}
-                  {peakPulseMoment.second}s
-                </span>
+                <span>Peak Spike: {peakPulseMoment.pulse} BPM</span>
               </button>
             )}
 
@@ -377,7 +516,7 @@ export default function ReplayScreen({
 
         {/* Current Point Telemetry HUD */}
         {activePoint && (
-          <div className="grid grid-cols-4 gap-2 text-xs font-mono">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
             <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between">
               <span className="text-slate-400 flex items-center gap-1">
                 <Heart className="w-3 h-3 text-rose-400" /> Pulse:
@@ -460,6 +599,23 @@ export default function ReplayScreen({
                 strokeDasharray="3 3"
               />
 
+              {/* Pressure Moment vertical line */}
+              {pressureMomentTime != null && (
+                <ReferenceLine
+                  yAxisId="pulse"
+                  x={pressureMomentTime}
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  label={{
+                    value: '⚡ Pressure Moment',
+                    fill: '#f59e0b',
+                    fontSize: 10,
+                    position: 'top',
+                  }}
+                />
+              )}
+
               {/* Heart rate wave */}
               <Line
                 yAxisId="pulse"
@@ -496,6 +652,20 @@ export default function ReplayScreen({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Vocal Cadence & Speech Timeline */}
+      <div className="bg-slate-900 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+          <Mic className="w-4 h-4 text-sky-400" />
+          Vocal Cadence & Speech Pacing Breakdown
+        </h3>
+        <SpeakingTimeline
+          speakingHistory={speakingEvents}
+          talkRatio={summary?.talkRatio || 70}
+          isCurrentlySpeaking={false}
+          pauseWarning={summary?.talkRatio < 50}
+        />
       </div>
 
       {/* Sub-Score Breakdown & AI / Biometric Tips */}
