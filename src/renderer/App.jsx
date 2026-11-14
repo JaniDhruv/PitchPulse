@@ -12,7 +12,10 @@ export default function App() {
   const [enableTelemetry, setEnableTelemetry] = useState(() => {
     return localStorage.getItem('pitchpulse_telemetry') === 'true';
   });
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(() => {
+    return localStorage.getItem('pitchpulse_api_key') || '';
+  });
+  const [isKeyLoaded, setIsKeyLoaded] = useState(false);
   const [currentView, setCurrentView] = useState('studio'); // 'studio' | 'reveal' | 'replay' | 'history'
   const [activeSession, setActiveSession] = useState(null);
   const [ghostTake, setGhostTake] = useState(null);
@@ -20,9 +23,17 @@ export default function App() {
   useEffect(() => {
     async function loadKey() {
       if (window.pitchPulseAPI) {
-        const key = await window.pitchPulseAPI.getApiKey();
-        if (key) setApiKey(key);
+        try {
+          const key = await window.pitchPulseAPI.getApiKey();
+          if (key) {
+            setApiKey(key);
+            localStorage.setItem('pitchpulse_api_key', key);
+          }
+        } catch (err) {
+          console.warn('Failed to load API key from main IPC:', err);
+        }
       }
+      setIsKeyLoaded(true);
     }
     loadKey();
   }, []);
@@ -30,8 +41,11 @@ export default function App() {
   const handleConsentAccept = (key, telemetry = false) => {
     localStorage.setItem('pitchpulse_consent', 'true');
     localStorage.setItem('pitchpulse_telemetry', String(telemetry));
+    if (key) {
+      localStorage.setItem('pitchpulse_api_key', key);
+      setApiKey(key);
+    }
     setHasConsented(true);
-    if (key) setApiKey(key);
     setEnableTelemetry(telemetry);
   };
 
@@ -71,41 +85,50 @@ export default function App() {
         />
       )}
 
-      {currentView === 'studio' && (
-        <SessionScreen
-          apiKey={apiKey}
-          enableTelemetry={enableTelemetry}
-          ghostTake={ghostTake}
-          onClearGhost={() => setGhostTake(null)}
-          onFinishSession={handleFinishSession}
-          onOpenHistory={() => setCurrentView('history')}
-          onOpenSettings={() => setHasConsented(false)}
-        />
-      )}
+      {!isKeyLoaded ? (
+        <div className="flex-1 flex flex-col items-center justify-center bg-[#070b14] text-slate-400 font-mono text-xs space-y-2">
+          <div className="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+          <span>Initializing physiological studio sensors...</span>
+        </div>
+      ) : (
+        <>
+          {currentView === 'studio' && (
+            <SessionScreen
+              apiKey={apiKey}
+              enableTelemetry={enableTelemetry}
+              ghostTake={ghostTake}
+              onClearGhost={() => setGhostTake(null)}
+              onFinishSession={handleFinishSession}
+              onOpenHistory={() => setCurrentView('history')}
+              onOpenSettings={() => setHasConsented(false)}
+            />
+          )}
 
-      {currentView === 'reveal' && (
-        <ScoreRevealScreen
-          sessionData={activeSession}
-          onContinueToReplay={() => setCurrentView('replay')}
-        />
-      )}
+          {currentView === 'reveal' && (
+            <ScoreRevealScreen
+              sessionData={activeSession}
+              onContinueToReplay={() => setCurrentView('replay')}
+            />
+          )}
 
-      {currentView === 'replay' && (
-        <ReplayScreen
-          sessionData={activeSession}
-          onBackToStudio={() => {
-            setGhostTake(null);
-            setCurrentView('studio');
-          }}
-          onPracticeWithGhost={handlePracticeWithGhost}
-        />
-      )}
+          {currentView === 'replay' && (
+            <ReplayScreen
+              sessionData={activeSession}
+              onBackToStudio={() => {
+                setGhostTake(null);
+                setCurrentView('studio');
+              }}
+              onPracticeWithGhost={handlePracticeWithGhost}
+            />
+          )}
 
-      {currentView === 'history' && (
-        <HistoryScreen
-          onBack={() => setCurrentView('studio')}
-          onSelectSession={handleSelectHistorySession}
-        />
+          {currentView === 'history' && (
+            <HistoryScreen
+              onBack={() => setCurrentView('studio')}
+              onSelectSession={handleSelectHistorySession}
+            />
+          )}
+        </>
       )}
     </div>
   );

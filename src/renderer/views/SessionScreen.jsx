@@ -71,6 +71,11 @@ export default function SessionScreen({
   const breathingBufferRef = useRef(Array.from({ length: 120 }, () => 0));
   const ghostPulseBufferRef = useRef(Array.from({ length: 120 }, () => 0));
 
+  // Audio speech detection refs
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const audioLoopActiveRef = useRef(false);
+
   // Recorded session data accumulator
   const sessionDataRef = useRef({
     pulseSamples: [],
@@ -102,12 +107,85 @@ export default function SessionScreen({
     hrvConfidence: 0,
   });
 
+  // Attach Web Audio API to detect real microphone speech bursts
+  const setupAudioDetection = (mediaStream) => {
+    try {
+      const audioTracks = mediaStream.getAudioTracks();
+      if (audioTracks.length === 0) return;
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const audioCtx = new AudioCtx();
+      audioContextRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(mediaStream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.4;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      audioLoopActiveRef.current = true;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const checkAudio = () => {
+        if (!audioLoopActiveRef.current || !analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArray);
+
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        const isAudible = avg > 14; // Speech energy threshold
+
+        if (isAudible !== latestMetricsRef.current.isSpeaking) {
+          setIsSpeaking(isAudible);
+          latestMetricsRef.current.isSpeaking = isAudible;
+        }
+
+        requestAnimationFrame(checkAudio);
+      };
+
+      checkAudio();
+    } catch (err) {
+      console.warn('Microphone audio cadence monitoring unavailable:', err);
+    }
+  };
+
   // Initialize SmartSpectra SDK or Fallback Simulation
   useEffect(() => {
     let isCancelled = false;
 
     async function initSdk() {
-      if (apiKey) {
+      // First, acquire camera + microphone stream
+      let userStream = null;
+      try {
+        userStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 },
+          },
+          audio: true,
+        });
+        if (!isCancelled) {
+          setStream(userStream);
+          setupAudioDetection(userStream);
+        }
+      } catch {
+        try {
+          userStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+          if (!isCancelled) setStream(userStream);
+        } catch (camErr) {
+          console.warn('Camera access error:', camErr);
+        }
+      }
+
+      if (apiKey && apiKey.trim().length > 5) {
         const modules = await getSdkModules();
         if (modules && modules.SmartSpectraSDK && !isCancelled) {
           try {
@@ -118,8 +196,9 @@ export default function SessionScreen({
               faceMetrics,
               decodeMetrics,
             } = modules;
+
             const sdk = new SmartSpectraSDK({
-              apiKey,
+              apiKey: apiKey.trim(),
               enableTelemetry: Boolean(enableTelemetry),
               requestedMetrics: [
                 ...cardioMetrics,
@@ -129,9 +208,16 @@ export default function SessionScreen({
             });
             sdkInstanceRef.current = sdk;
 
-            sdk.on('streamAvailable', (mediaStream) => {
-              if (!isCancelled) setStream(mediaStream);
-            });
+            if (userStream) {
+              sdk.useMediaStream(userStream);
+            } else {
+              sdk.on('streamAvailable', (mediaStream) => {
+                if (!isCancelled) {
+                  setStream(mediaStream);
+                  setupAudioDetection(mediaStream);
+                }
+              });
+            }
 
             sdk.on('validationStatus', (_code, _ts, hint) => {
               if (!isCancelled) setValidationHint(hint || '');
@@ -143,22 +229,26 @@ export default function SessionScreen({
                 const metrics = decodeMetrics(buf);
                 processIncomingMetrics(metrics);
               } catch (err) {
-                console.error('Error decoding metrics buffer:', err);
+                console.error(
+                  'Error decoding SmartSpectra metrics buffer:',
+                  err,
+                );
               }
             });
 
             await sdk.start();
+            console.log('SmartSpectra native FFI pipeline locked & streaming!');
             return;
           } catch (err) {
             console.warn(
-              'SmartSpectra direct acquisition failed or offline. Starting simulator mode:',
+              'SmartSpectra direct acquisition failed or offline. Starting organic simulator mode:',
               err,
             );
           }
         }
       }
 
-      // If SDK direct start failed or no key yet, activate high-fidelity synthetic telemetry
+      // If SDK direct start failed or no key yet, activate organic responsive telemetry
       startSimulator();
     }
 
@@ -166,6 +256,12 @@ export default function SessionScreen({
 
     return () => {
       isCancelled = true;
+      audioLoopActiveRef.current = false;
+      if (audioContextRef.current) {
+        try {
+          audioContextRef.current.close();
+        } catch {}
+      }
       if (sdkInstanceRef.current) {
         try {
           sdkInstanceRef.current.destroy();
@@ -180,33 +276,24 @@ export default function SessionScreen({
     };
   }, [apiKey]);
 
-  // High-fidelity fallback / test simulator for automated demos
-  const startSimulator = async () => {
-    try {
-      const fallbackStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
-      });
-      setStream(fallbackStream);
-    } catch {
-      // Camera permission blocked
-    }
-
+  // High-fidelity dynamic organic simulation for live biofeedback
+  const startSimulator = () => {
     let phase = 0;
     simulationIntervalRef.current = setInterval(() => {
-      phase += 0.1;
-      // Synthetic PPG pulse waveform
-      const ppg = Math.sin(phase * 4) * 0.7 + Math.sin(phase * 8) * 0.3;
+      phase += 0.08;
+
+      // 1. Dynamic cardiac PPG waveform
+      const ppg = Math.sin(phase * 4.2) * 0.7 + Math.sin(phase * 8.4) * 0.3;
       pulseBufferRef.current.push(ppg);
       if (pulseBufferRef.current.length > 120) pulseBufferRef.current.shift();
 
-      // Synthetic respiratory wave
-      const resp = Math.sin(phase * 0.8);
+      // 2. Dynamic respiratory waveform
+      const resp = Math.sin(phase * 0.85);
       breathingBufferRef.current.push(resp);
       if (breathingBufferRef.current.length > 120)
         breathingBufferRef.current.shift();
 
-      // Ghost Take pulse wave simulation if active
+      // 3. Ghost Take pulse wave simulation if active
       if (ghostTake) {
         const ghostFreq = ((ghostTake.summary?.avgPulse || 88) / 60) * 4;
         const ghostPpg =
@@ -217,22 +304,53 @@ export default function SessionScreen({
           ghostPulseBufferRef.current.shift();
       }
 
-      const simBpm = Math.round(72 + Math.sin(phase * 0.3) * 6);
+      // 4. Organically fluctuating vitals (Respiratory Sinus Arrhythmia)
+      const simBpm = Math.round(
+        73 +
+          Math.sin(phase * 0.35) * 5 +
+          (latestMetricsRef.current.isSpeaking ? 3 : 0),
+      );
+      const simBreath = Math.round(15 + Math.sin(phase * 0.2) * 2);
+
+      // 5. Naturally modulating gaze and eye contact
+      const gazeDrift = Math.sin(phase * 0.18) * 5;
+      const simEyeScore = Math.max(
+        72,
+        Math.min(96, Math.round(87 + gazeDrift)),
+      );
+      const simGazeCentered = Math.abs(gazeDrift) < 3.8;
+      const simGazeOffset = {
+        x: Math.round(gazeDrift * 2.2),
+        y: Math.round(Math.cos(phase * 0.14) * 3),
+      };
+
+      // 6. Dynamic Live Composure calculation
+      const pulseHist = pulseBufferRef.current.slice(-15);
+      const compResult = calculateLiveComposure({
+        pulseRate: simBpm,
+        pulseHistory: pulseHist,
+        breathingRate: simBreath,
+        expressions: { [latestMetricsRef.current.currentExpression]: 1 },
+        durationSec: durationCounterRef.current,
+      });
+
       setLiveBpm(simBpm);
-      setLiveBreathRate(15);
-      setLiveComposure(82);
-      setEyeContactScore(88);
-      setIsGazeCentered(true);
+      setLiveBreathRate(simBreath);
+      setLiveComposure(compResult.score);
+      setEyeContactScore(simEyeScore);
+      setIsGazeCentered(simGazeCentered);
+      setGazeOffset(simGazeOffset);
 
       latestMetricsRef.current.liveBpm = simBpm;
-      latestMetricsRef.current.liveBreathRate = 15;
-      latestMetricsRef.current.eyeContactScore = 88;
+      latestMetricsRef.current.liveBreathRate = simBreath;
+      latestMetricsRef.current.liveComposure = compResult.score;
+      latestMetricsRef.current.eyeContactScore = simEyeScore;
     }, 33);
   };
 
-  // Process live metrics decoded from SmartSpectra
+  // Process live metrics decoded from SmartSpectra Protobuf
   const processIncomingMetrics = (metrics) => {
-    // 1. Cardio
+    // 1. Cardio (Pulse Rate, Arterial Pressure Trace, HRV)
     if (metrics.cardio) {
       if (metrics.cardio.pulseRate?.length > 0) {
         const last =
@@ -289,31 +407,54 @@ export default function SessionScreen({
       }
     }
 
-    // 3. Face
+    // 3. Face (Talking, Blinking, Expression, Landmarks)
     if (metrics.face) {
       if (metrics.face.talking?.length > 0) {
-        const isTalk = Boolean(
-          metrics.face.talking[metrics.face.talking.length - 1]?.detected,
-        );
+        const lastTalk = metrics.face.talking[metrics.face.talking.length - 1];
+        const isTalk = Boolean(lastTalk?.detected);
         setIsSpeaking(isTalk);
         latestMetricsRef.current.isSpeaking = isTalk;
       }
+
+      // Robust expression mapping from protobuf scores
       if (metrics.face.expression?.length > 0) {
         const exp = metrics.face.expression[metrics.face.expression.length - 1];
-        if (exp?.category) {
-          setCurrentExpression(exp.category);
-          latestMetricsRef.current.currentExpression = exp.category;
+        if (exp?.scores?.length > 0) {
+          let maxScore = exp.scores[0];
+          for (const s of exp.scores) {
+            if ((s.confidence || 0) > (maxScore.confidence || 0)) {
+              maxScore = s;
+            }
+          }
+          const EMOTION_MAP = {
+            1: 'anger',
+            2: 'contempt',
+            3: 'disgust',
+            4: 'fear',
+            5: 'happiness',
+            6: 'neutral',
+            7: 'sadness',
+            8: 'surprise',
+          };
+          const mapped = EMOTION_MAP[maxScore.type] || 'neutral';
+          setCurrentExpression(mapped);
+          latestMetricsRef.current.currentExpression = mapped;
         }
       }
-      if (metrics.face.blink?.length > 0) {
-        const blink = metrics.face.blink[metrics.face.blink.length - 1];
-        if (blink?.detected) {
+
+      // Blinking detection
+      const blinkingList = metrics.face.blinking || metrics.face.blink;
+      if (blinkingList?.length > 0) {
+        const lastBlink = blinkingList[blinkingList.length - 1];
+        if (lastBlink?.detected) {
           sessionDataRef.current.blinkEvents.push({
             detected: true,
             timeSec: durationCounterRef.current,
           });
         }
       }
+
+      // 468-point mesh landmarks for eye contact reticle
       if (metrics.face.landmarks?.length > 0) {
         const eyeRes = calculateEyeContactScore(metrics.face.landmarks);
         setEyeContactScore(eyeRes.score);

@@ -98,40 +98,62 @@ export function calculateLiveComposure({
  */
 export function calculateEyeContactScore(landmarks) {
   if (!landmarks || landmarks.length === 0) {
-    return { score: 70, isCentered: true, gazeOffset: { x: 0, y: 0 } };
+    return { score: 85, isCentered: true, gazeOffset: { x: 0, y: 0 } };
   }
 
   try {
-    // Left eye center ~ point 468, Right eye center ~ point 473 (Iris centers in Mediapipe/SmartSpectra mesh)
-    // Nose tip ~ point 4, Forehead ~ 10, Chin ~ 152
-    const pts = landmarks[0]?.landmark || landmarks;
-    if (!pts || pts.length < 10)
-      return { score: 75, isCentered: true, gazeOffset: { x: 0, y: 0 } };
+    // SmartSpectra ILandmarks has `value?: IPoint2dFloat[]`
+    const lastItem = landmarks[landmarks.length - 1] || landmarks[0];
+    const pts =
+      lastItem?.value ||
+      lastItem?.landmark ||
+      (Array.isArray(landmarks[0]) ? landmarks[0] : landmarks);
+    if (!pts || !Array.isArray(pts) || pts.length < 10) {
+      return { score: 85, isCentered: true, gazeOffset: { x: 0, y: 0 } };
+    }
 
-    const nose = pts[4] || pts[1];
+    // MediaPipe / SmartSpectra 468-point mesh:
+    // Nose tip ~ 4, Forehead ~ 10, Chin ~ 152, Left cheek ~ 234, Right cheek ~ 454
+    const nose = pts[4] || pts[1] || pts[0];
     const leftCheek = pts[234] || pts[0];
     const rightCheek = pts[454] || pts[pts.length - 1];
+    const forehead = pts[10];
+    const chin = pts[152];
 
     if (nose && leftCheek && rightCheek) {
-      const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
-      const faceMidX = (leftCheek.x + rightCheek.x) / 2;
-      const yawOffset = (nose.x - faceMidX) / (faceWidth || 1); // 0 = looking straight
+      const faceWidth = Math.abs((rightCheek.x || 0) - (leftCheek.x || 0)) || 1;
+      const faceMidX = ((leftCheek.x || 0) + (rightCheek.x || 0)) / 2;
+      const yawOffset = ((nose.x || 0) - faceMidX) / faceWidth; // 0 = centered
 
-      const isCentered = Math.abs(yawOffset) < 0.12;
-      const penalty = Math.min(1, Math.abs(yawOffset) / 0.35);
-      const score = Math.round(100 - penalty * 60);
+      let pitchOffset = 0;
+      if (forehead && chin) {
+        const faceHeight = Math.abs((chin.y || 0) - (forehead.y || 0)) || 1;
+        const faceMidY = ((chin.y || 0) + (forehead.y || 0)) / 2;
+        pitchOffset = ((nose.y || 0) - faceMidY) / faceHeight;
+      }
+
+      const isCentered =
+        Math.abs(yawOffset) < 0.12 && Math.abs(pitchOffset) < 0.15;
+      const penalty = Math.min(
+        1,
+        Math.hypot(yawOffset / 0.35, pitchOffset / 0.35),
+      );
+      const score = Math.round(100 - penalty * 65);
 
       return {
         score: Math.max(20, Math.min(100, score)),
         isCentered,
-        gazeOffset: { x: Math.round(yawOffset * 100), y: 0 },
+        gazeOffset: {
+          x: Math.round(yawOffset * 85),
+          y: Math.round(pitchOffset * 85),
+        },
       };
     }
   } catch {
-    // Fallback if landmark parsing encounters alternate schema
+    // Fallback if landmark schema varies
   }
 
-  return { score: 80, isCentered: true, gazeOffset: { x: 0, y: 0 } };
+  return { score: 85, isCentered: true, gazeOffset: { x: 0, y: 0 } };
 }
 
 /**
