@@ -179,7 +179,7 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
         </div>
 
         {/* Hero Outcome: Autonomic Recovery */}
-        {recoveryStats && (
+        {recoveryStats?.hasPressureMoment ? (
           <div className="w-full max-w-md p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-indigo-950/60 border border-amber-500/40 flex items-center justify-between shadow-xl">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-400">
@@ -187,10 +187,12 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
               </div>
               <div className="text-left">
                 <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">
-                  Autonomic Recovery
+                  Pulse Recovery Latency
                 </span>
                 <span className="text-xs font-bold text-slate-200">
-                  {recoveryStats.recoveryLatencySec}s return to baseline
+                  {recoveryStats.recoveryLatencySec != null
+                    ? `${recoveryStats.recoveryLatencySec}s return to baseline`
+                    : `Baseline steady (${recoveryStats.baselineBpm} BPM)`}
                 </span>
               </div>
             </div>
@@ -199,11 +201,25 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
               <span className="text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm animate-pulse">
                 {recoveryStats.ghostComparisonDelta.summaryText}
               </span>
-            ) : (
+            ) : recoveryStats.bpmSpike >= 3 ? (
               <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                 +{recoveryStats.bpmSpike} BPM Spike
               </span>
+            ) : (
+              <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                No Spike
+              </span>
             )}
+          </div>
+        ) : (
+          <div className="w-full max-w-md p-3 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between text-xs text-slate-400 shadow-md">
+            <div className="flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-slate-500" />
+              <span>No acute pressure moment marked</span>
+            </div>
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+              Steady Baseline
+            </span>
           </div>
         )}
 
@@ -222,7 +238,7 @@ export default function ScoreRevealScreen({ sessionData, onContinueToReplay }) {
           <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex flex-col items-center shadow-md">
             <Eye className="w-4 h-4 text-indigo-400 mb-1" />
             <span className="text-[10px] text-slate-400 font-semibold uppercase">
-              Audience Focus
+              Camera-Facing Gaze
             </span>
             <span className="text-sm font-black font-mono text-slate-100 mt-0.5">
               {eyeScore}%

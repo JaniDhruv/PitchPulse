@@ -58,7 +58,9 @@ export default function App() {
         take1EyeContact: ghostTake.summary?.subScores?.eyeContact || 65,
         take1Breath: ghostTake.summary?.avgBreath || 18,
         take1RecoverySec:
-          ghostTake.summary?.recoveryStats?.recoveryLatencySec || 22,
+          ghostTake.summary?.recoveryStats?.recoveryLatencySec ?? null,
+        take1IsDemo: Boolean(ghostTake.isDemoMode),
+        take2IsDemo: Boolean(sessionData.isDemoMode),
         take1Date: ghostTake.timestamp || Date.now(),
       };
     }

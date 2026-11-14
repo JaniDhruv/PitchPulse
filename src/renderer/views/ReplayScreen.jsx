@@ -244,8 +244,8 @@ export default function ReplayScreen({
         </div>
       </div>
 
-      {/* Hero Outcome: Autonomic Recovery Under Pressure */}
-      {recoveryStats && (
+      {/* Hero Outcome: Pulse Recovery After Pressure Moment */}
+      {recoveryStats?.hasPressureMoment ? (
         <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-indigo-950/60 border border-amber-500/40 shadow-2xl space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
@@ -254,7 +254,7 @@ export default function ReplayScreen({
               </div>
               <div>
                 <h3 className="text-sm font-black text-slate-100 flex items-center gap-2">
-                  Autonomic Recovery Under Pressure
+                  Pulse Recovery After Pressure Moment
                   {pressureMomentTime != null && (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                       Marked @ {pressureMomentTime}s
@@ -263,7 +263,7 @@ export default function ReplayScreen({
                 </h3>
                 <p className="text-[11px] text-slate-400">
                   Measuring physiological resilience: how quickly heart rate and
-                  gaze restabilize after high stress.
+                  camera-facing gaze restabilize after acute tension.
                 </p>
               </div>
             </div>
@@ -272,9 +272,13 @@ export default function ReplayScreen({
               <span className="text-xs font-mono font-black px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg animate-pulse">
                 {recoveryStats.ghostComparisonDelta.summaryText}
               </span>
-            ) : (
+            ) : recoveryStats.recoveryLatencySec != null ? (
               <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
                 {recoveryStats.recoveryLatencySec}s Recovery Latency
+              </span>
+            ) : (
+              <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                Steady Baseline
               </span>
             )}
           </div>
@@ -282,13 +286,13 @@ export default function ReplayScreen({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
             <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
               <span className="text-[10px] text-slate-400 font-semibold block uppercase">
-                Pre-Stress Baseline
+                Baseline Pulse (Pre-Moment)
               </span>
               <span className="text-lg font-mono font-bold text-slate-100 mt-1 block">
                 {recoveryStats.baselineBpm} BPM
               </span>
               <span className="text-[10px] text-slate-500">
-                Resting cardiac tone
+                Pre-pressure cardiac baseline
               </span>
             </div>
 
@@ -297,7 +301,9 @@ export default function ReplayScreen({
                 Stress Surge Spike
               </span>
               <span className="text-lg font-mono font-bold text-rose-400 mt-1 block">
-                +{recoveryStats.bpmSpike} BPM
+                {recoveryStats.bpmSpike > 0
+                  ? `+${recoveryStats.bpmSpike} BPM`
+                  : '0 BPM'}
               </span>
               <span className="text-[10px] text-slate-500">
                 Peak {recoveryStats.peakBpm} BPM
@@ -309,22 +315,28 @@ export default function ReplayScreen({
                 Recovery Latency
               </span>
               <span className="text-lg font-mono font-bold text-sky-400 mt-1 block">
-                {recoveryStats.recoveryLatencySec} seconds
+                {recoveryStats.recoveryLatencySec != null
+                  ? `${recoveryStats.recoveryLatencySec} seconds`
+                  : 'Steady (No Spike)'}
               </span>
               <span className="text-[10px] text-slate-500">
-                Time to return to baseline
+                {recoveryStats.recoveryLatencySec != null
+                  ? 'Time to return to baseline'
+                  : 'Pulse remained at baseline'}
               </span>
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
               <span className="text-[10px] text-slate-400 font-semibold block uppercase">
-                Stress Gaze Retention
+                Gaze Retention In Window
               </span>
               <span className="text-lg font-mono font-bold text-indigo-400 mt-1 block">
-                {recoveryStats.gazeRetentionPct}%
+                {recoveryStats.gazeRetentionPct != null
+                  ? `${recoveryStats.gazeRetentionPct}%`
+                  : 'N/A'}
               </span>
               <span className="text-[10px] text-slate-500">
-                Audience eye lock in 10s window
+                Camera-facing alignment in window
               </span>
             </div>
           </div>
@@ -343,6 +355,25 @@ export default function ReplayScreen({
             )}
           </div>
         </div>
+      ) : (
+        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs text-slate-400 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <Zap className="w-4 h-4 text-slate-500 shrink-0" />
+            <div>
+              <span className="font-bold text-slate-300 block">
+                No Measurable Pressure Moment Captured
+              </span>
+              <span className="text-[11px] text-slate-500">
+                Pulse remained steady at baseline ({summary?.avgPulse || 72}{' '}
+                BPM). To evaluate cardiac recovery under pressure, press
+                Spacebar when facing a difficult slide or question.
+              </span>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+            Steady Baseline
+          </span>
+        </div>
       )}
 
       {/* Side-by-Side "Ghost Take" Comparative Scorecard */}
@@ -358,13 +389,44 @@ export default function ReplayScreen({
             <span className="text-xs font-mono font-bold px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
               +
               {Math.max(
-                1,
+                0,
                 (summary?.overallScore || 85) -
                   sessionData.ghostComparison.take1Score,
               )}{' '}
-              PTS REGULATION GAIN
+              PTS SCORE IMPROVEMENT
             </span>
           </div>
+
+          {/* Provenance Transparency Notice */}
+          {sessionData.ghostComparison.take1IsDemo ||
+          sessionData.ghostComparison.take2IsDemo ||
+          sessionData.isDemoMode ? (
+            <div className="p-2.5 rounded-xl bg-amber-950/70 border border-amber-500/40 text-amber-200 text-xs flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>
+                  <strong>Provenance Notice:</strong>{' '}
+                  {sessionData.ghostComparison.take1IsDemo &&
+                  (sessionData.ghostComparison.take2IsDemo ||
+                    sessionData.isDemoMode)
+                    ? 'Both takes were recorded using synthetic simulation.'
+                    : `Mixed provenance comparison (${sessionData.ghostComparison.take1IsDemo ? 'Take 1 was Demo Run' : 'Take 1 was Live SDK'}, ${sessionData.isDemoMode ? 'Take 2 was Demo Run' : 'Take 2 was Live SDK'}).`}{' '}
+                  Cross-mode comparisons are illustrative only.
+                </span>
+              </span>
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-900/80 border border-amber-500/30 text-amber-300 shrink-0 ml-2">
+                Synthetic Provenance
+              </span>
+            </div>
+          ) : (
+            <div className="p-2 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>
+                Live Hardware Verified: Both takes captured via SmartSpectra
+                contactless optical sensing.
+              </span>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
             <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
@@ -401,7 +463,7 @@ export default function ReplayScreen({
 
             <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
               <span className="text-[10px] text-slate-400 font-semibold block uppercase">
-                Audience Eye Focus
+                Camera-Facing Gaze
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-lg font-mono font-bold text-slate-100">
@@ -441,7 +503,7 @@ export default function ReplayScreen({
 
             <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
               <span className="text-[10px] text-slate-400 font-semibold block uppercase">
-                Overall Mastery
+                Performance Score
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-lg font-mono font-bold text-indigo-400">
@@ -680,37 +742,37 @@ export default function ReplayScreen({
           <div className="space-y-3">
             {[
               {
-                label: 'Eye Contact',
+                label: 'Camera-Facing Gaze (Estimate)',
                 weight: '25%',
                 score: summary?.subScores?.eyeContact || 85,
                 color: 'bg-indigo-500',
               },
               {
-                label: 'Composure',
+                label: 'Pulse Stability Index',
                 weight: '25%',
                 score: summary?.subScores?.composure || 80,
                 color: 'bg-sky-500',
               },
               {
-                label: 'Speaking Pace',
+                label: 'Vocal Pace & Pauses',
                 weight: '20%',
                 score: summary?.subScores?.speakingPace || 85,
                 color: 'bg-cyan-500',
               },
               {
-                label: 'Breath Control',
+                label: 'Respiratory Rhythm',
                 weight: '15%',
                 score: summary?.subScores?.breathControl || 78,
                 color: 'bg-emerald-500',
               },
               {
-                label: 'Expression Dynamics',
+                label: 'Facial Tension Observation',
                 weight: '10%',
                 score: summary?.subScores?.expression || 88,
                 color: 'bg-amber-500',
               },
               {
-                label: 'Blink Naturalness',
+                label: 'Estimated Blink Cadence',
                 weight: '5%',
                 score: summary?.subScores?.blinkNaturalness || 90,
                 color: 'bg-purple-500',

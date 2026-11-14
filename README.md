@@ -112,6 +112,8 @@ A presentation coach's greatest asset is scientific honesty. PitchPulse never ma
 - **● Live SmartSpectra SDK Mode**: When a valid SmartSpectra API key is present, the app initializes the native C++ FFI pipeline via `koffi` and `@smartspectra/node-sdk`. The UI displays an emerald badge `[● LIVE SMARTSPECTRA SDK]` with real-time signal confidence ratings (e.g. `Quality: 88%`) and baseline lock indicators.
 - **⏳ Baseline Calibration Window**: During the first 15–20 seconds of optical rPPG video acquisition, PitchPulse displays an active countdown `[⏳ CALIBRATING BASELINE (14s/20s)]` to respect the optical blood absorption settling period.
 - **⚠️ Transparent Demo Simulation Mode**: If no API key is provided or if network authentication fails, PitchPulse activates a dynamic biological simulation engine. The UI hard-labels the mode with prominent amber badges: `[⚠️ DEMO DATA — NO LIVE SENSING]`. All demo flight logs are explicitly tagged `[DEMO DATA - SIMULATED]` in Replay and History to guarantee absolute integrity.
+- **🛡️ Strict Provenance on Ghost Take Comparisons**: PitchPulse explicitly labels provenance on comparative reviews. If either session was recorded in demo mode, an unmistakable `[⚠️ Synthetic Provenance]` notice clarifies that the comparison is illustrative workflow rehearsal rather than physical experimental data.
+- **🚫 Zero Default Fabrication**: When no pressure moment is marked or acute surge detected, PitchPulse never manufactures a flattering recovery score. It explicitly reports _"No measurable pressure moment captured"_ rather than inventing artificial stress peaks or recovery seconds.
 
 ---
 
