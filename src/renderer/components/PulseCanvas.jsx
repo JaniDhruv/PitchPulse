@@ -206,18 +206,20 @@ export default function PulseCanvas({
           Pulse & Recovery
         </span>
         {pressureMoment ? (
-          pressureMoment.status === 'recovered' ? (
+          pressureMoment.status === 'steady' ? (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-sky-950/80 border-sky-500/50 text-sky-300 shadow-sm">
+              Baseline Steady ({pressureMoment.baselineBpm} BPM)
+            </span>
+          ) : pressureMoment.status === 'recovered' ? (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-950/80 border-emerald-500/50 text-emerald-300 shadow-sm animate-pulse">
-              ✅ Recovered in {pressureMoment.recoverySec}s
+              ✅ Restabilized in {pressureMoment.recoverySec}s
             </span>
           ) : (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-amber-950/80 border-amber-500/50 text-amber-300 shadow-sm animate-pulse">
-              ⚡ Recovery Tracking (+
-              {Math.max(
-                0,
-                pressureMoment.peakBpm - pressureMoment.baselineBpm,
-              )}{' '}
-              BPM)
+              ⚡ Tracking Response
+              {pressureMoment.peakBpm > pressureMoment.baselineBpm
+                ? ` (+${pressureMoment.peakBpm - pressureMoment.baselineBpm} BPM)`
+                : ''}
             </span>
           )
         ) : (

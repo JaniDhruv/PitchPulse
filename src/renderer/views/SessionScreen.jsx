@@ -514,7 +514,7 @@ export default function SessionScreen({
     const momentObj = {
       timeSec: currentSec,
       baselineBpm: base,
-      peakBpm: currentPulse + 6,
+      peakBpm: currentPulse,
       recoverySec: null,
       status: 'active',
     };
@@ -531,7 +531,7 @@ export default function SessionScreen({
       {
         category: 'pulse',
         icon: '⚡',
-        text: 'Pressure Moment marked! Inhale 4s, exhale 4s — tracking autonomic recovery.',
+        text: 'Pressure Moment marked — tracking live heart rate response.',
       },
       currentSec,
     );
@@ -611,7 +611,15 @@ export default function SessionScreen({
             );
           }
 
-          if (elapsed >= 3 && currentBpm <= pressureMoment.baselineBpm + 3) {
+          // A true acute surge requires pulse to rise at least 3 BPM over baseline
+          const hasSurged =
+            pressureMoment.peakBpm >= pressureMoment.baselineBpm + 3;
+
+          if (
+            hasSurged &&
+            elapsed >= 3 &&
+            currentBpm <= pressureMoment.baselineBpm + 2
+          ) {
             const recSec = elapsed;
             setPressureMoment((prev) =>
               prev
@@ -620,19 +628,26 @@ export default function SessionScreen({
             );
             if (sessionDataRef.current.pressureMoments.length > 0) {
               sessionDataRef.current.pressureMoments[0].recoverySec = recSec;
-              sessionDataRef.current.pressureMoments[0].peakBpm = Math.max(
-                sessionDataRef.current.pressureMoments[0].peakBpm || 0,
-                currentBpm,
-              );
+              sessionDataRef.current.pressureMoments[0].peakBpm =
+                pressureMoment.peakBpm;
             }
             triggerCoachingNudge(
               {
                 category: 'positive',
                 icon: '✅',
-                text: `Equilibrium restored! Heart rate recovered to baseline in ${recSec}s.`,
+                text: `Heart rate returned to baseline in ${recSec}s.`,
               },
               newSec,
             );
+          } else if (!hasSurged && elapsed >= 8) {
+            // Pulse remained steady at baseline throughout the pressure window
+            setPressureMoment((prev) =>
+              prev ? { ...prev, recoverySec: null, status: 'steady' } : prev,
+            );
+            if (sessionDataRef.current.pressureMoments.length > 0) {
+              sessionDataRef.current.pressureMoments[0].status = 'steady';
+              sessionDataRef.current.pressureMoments[0].recoverySec = null;
+            }
           }
         }
 
@@ -789,9 +804,15 @@ export default function SessionScreen({
         {ghostTake && (
           <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-300 text-xs font-semibold shadow-lg">
             <span>
-              👻 Ghost Take Active: Comparing with Take 1 (
-              {ghostTake.summary?.avgPulse || 88} BPM)
+              👻 Ghost Take: Comparing vs Take 1 (
+              {ghostTake.isDemoMode ? 'Demo Run' : 'Live SDK'} •{' '}
+              {ghostTake.summary?.avgPulse || 72} BPM)
             </span>
+            {ghostTake.isDemoMode && sensingMode === 'live' && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/80 border border-amber-500/40 text-amber-300">
+                Mixed Demo Comparison
+              </span>
+            )}
             {onClearGhost && (
               <button
                 onClick={onClearGhost}

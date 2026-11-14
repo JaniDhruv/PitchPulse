@@ -133,28 +133,34 @@ export default function CameraPreview({
                   : 'bg-amber-950/90 border-amber-500/70 text-amber-200 shadow-amber-500/20 animate-pulse'
               }`}
             >
-              {pressureMoment.status === 'recovered' ? (
+              {pressureMoment.status === 'steady' ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-sky-400" />
+                  <span className="text-xs font-bold tracking-wide text-sky-200">
+                    Baseline Steady ({pressureMoment.baselineBpm} BPM) — No
+                    Acute Cardiac Spike
+                  </span>
+                </>
+              ) : pressureMoment.status === 'recovered' ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   <span className="text-xs font-black tracking-wide">
-                    RECOVERED IN {pressureMoment.recoverySec}s! Baseline
-                    Restored ({pressureMoment.baselineBpm} BPM)
+                    Baseline Restored in {pressureMoment.recoverySec}s (
+                    {pressureMoment.baselineBpm} BPM)
                   </span>
                 </>
               ) : (
                 <>
                   <Zap className="w-4 h-4 text-amber-400 animate-bounce" />
                   <span className="text-xs font-black tracking-wide">
-                    ⚡ PRESSURE MOMENT ACTIVE — Tracking Autonomic Recovery...
+                    ⚡ PRESSURE MOMENT ACTIVE — Tracking Live Response...
                   </span>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-black/40 text-amber-300">
-                    Spike: +
-                    {Math.max(
-                      0,
-                      pressureMoment.peakBpm - pressureMoment.baselineBpm,
-                    )}{' '}
-                    BPM
-                  </span>
+                  {pressureMoment.peakBpm > pressureMoment.baselineBpm && (
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-black/40 text-amber-300">
+                      +{pressureMoment.peakBpm - pressureMoment.baselineBpm} BPM
+                      Spike
+                    </span>
+                  )}
                 </>
               )}
             </div>

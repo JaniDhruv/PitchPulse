@@ -299,32 +299,32 @@ export function calculateSessionSummary(sessionMetrics, ghostTake = null) {
   const tips = [];
   if (avgEyeContact < 75) {
     tips.push(
-      'Maintain direct eye contact with the lens rather than looking down at presentation notes.',
+      'Keep head and gaze oriented toward the camera lens to maintain audience connection rather than looking down.',
     );
   }
   if (pauseCount > 0) {
     tips.push(
-      `Detected ${pauseCount} awkward pauses longer than 4.5 seconds. Practice linking thoughts smoothly.`,
+      `Detected ${pauseCount} extended pauses longer than 4.5 seconds. Practice bridging key transitions smoothly.`,
     );
   }
   if (talkRatio > 0.88) {
     tips.push(
-      'Speaking speed was slightly rushed. Build in 1-second strategic pauses after key points.',
+      'Speaking pace was somewhat continuous. Consider building in 1-second deliberate pauses after key assertions.',
     );
   }
   if (blinksPerMin < 8) {
     tips.push(
-      'Low blink rate detected — you may be freezing or staring stiffly. Keep facial muscles relaxed.',
+      'Lower estimated blink cadence. Maintain natural blinking to prevent visual strain and facial stiffness.',
     );
   }
   if (avgPulse > 95) {
     tips.push(
-      `Elevated heart rate (~${avgPulse} BPM). Try taking two deep abdominal breaths before launching into your pitch.`,
+      `Elevated heart rate (~${avgPulse} BPM). Taking two slow diaphragmatic breaths before speaking can help steady initial pulse.`,
     );
   }
   if (tips.length === 0) {
     tips.push(
-      'Excellent delivery! Strong eye contact, steady physiological control, and natural cadence throughout.',
+      'Consistent pacing, camera-oriented gaze, and steady pulse stability observed throughout session.',
     );
   }
 
@@ -353,21 +353,23 @@ export function calculateSessionSummary(sessionMetrics, ghostTake = null) {
 /**
  * Calculate physiological recovery statistics around the "Pressure Moment".
  * Answers the competition hero question: "Did your recovery after the hard part improve?"
+ * Never fabricates defaults when no real event occurred.
  */
 export function calculateRecoveryStats(sessionMetrics = {}, ghostTake = null) {
   const {
     pulseSamples = [],
     pressureMoments = [],
-    durationSec = 60,
+    _durationSec = 60,
     eyeContactScores = [],
+    isDemoMode = false,
   } = sessionMetrics;
 
-  // 1. Identify primary pressure moment (user marked or peak acute pulse surge)
+  // 1. Identify primary pressure moment (user marked or acute pulse surge)
   let moment =
     pressureMoments && pressureMoments.length > 0 ? pressureMoments[0] : null;
 
   if (!moment && pulseSamples.length >= 8) {
-    // Auto-detect highest stress acceleration point
+    // Auto-detect acute pulse surge (minimum +5 BPM acceleration)
     let maxJump = 0;
     let maxIdx = 0;
     for (let i = 4; i < pulseSamples.length; i++) {
@@ -385,12 +387,13 @@ export function calculateRecoveryStats(sessionMetrics = {}, ghostTake = null) {
       moment = {
         timeSec,
         baselineBpm: Math.round(baselineBpm),
-        peakBpm: pulseSamples[maxIdx]?.value ?? 88,
+        peakBpm: pulseSamples[maxIdx]?.value ?? Math.round(baselineBpm),
         isAutoDetected: true,
       };
     }
   }
 
+  // If no moment was marked and no acute surge occurred: NEVER invent defaults!
   if (!moment) {
     const avg =
       pulseSamples.length > 0
@@ -402,20 +405,21 @@ export function calculateRecoveryStats(sessionMetrics = {}, ghostTake = null) {
     return {
       hasPressureMoment: false,
       isAutoDetected: false,
-      timeSec: Math.round(durationSec * 0.4),
+      timeSec: null,
       baselineBpm: avg,
-      peakBpm: avg + 6,
-      bpmSpike: 6,
-      recoveryLatencySec: 9,
-      gazeRetentionPct: 84,
+      peakBpm: avg,
+      bpmSpike: 0,
+      recoveryLatencySec: null,
+      gazeRetentionPct: null,
       recoveryVerdict:
-        'Stable physiological equilibrium maintained throughout pitch.',
+        'No measurable pressure moment captured. Mark difficult slides or Q&A moments with the spacebar during recording to evaluate recovery latency.',
       ghostComparisonDelta: null,
     };
   }
 
   const markSec = moment.timeSec;
   const baselineBpm = moment.baselineBpm || 72;
+  // Start peak at the actual pulse at the mark second, never fabricate +6 BPM!
   let peakBpm = moment.peakBpm || baselineBpm;
   let recoveryLatencySec = moment.recoverySec || null;
 
@@ -429,7 +433,13 @@ export function calculateRecoveryStats(sessionMetrics = {}, ghostTake = null) {
 
     if (t >= markSec) {
       if (val > peakBpm) peakBpm = val;
-      if (!recoveryLatencySec && t >= markSec + 3 && val <= baselineBpm + 4) {
+      // Only compute recovery latency if an actual spike (at least +3 BPM over baseline) occurred
+      if (
+        !recoveryLatencySec &&
+        t >= markSec + 3 &&
+        peakBpm >= baselineBpm + 3 &&
+        val <= baselineBpm + 2
+      ) {
         recoveryLatencySec = t - markSec;
       }
       // Gaze during acute recovery window (10s post-moment)
@@ -440,47 +450,87 @@ export function calculateRecoveryStats(sessionMetrics = {}, ghostTake = null) {
     }
   }
 
-  if (!recoveryLatencySec) {
-    recoveryLatencySec = Math.max(12, durationSec - markSec);
-  }
-
-  const bpmSpike = Math.max(1, peakBpm - baselineBpm);
-  const gazeRetentionPct = gazeCount > 0 ? Math.round(gazeSum / gazeCount) : 80;
+  const bpmSpike = Math.max(0, peakBpm - baselineBpm);
+  const gazeRetentionPct =
+    gazeCount > 0 ? Math.round(gazeSum / gazeCount) : null;
 
   let verdict = '';
-  if (recoveryLatencySec <= 10) {
-    verdict = `Rapid Recovery (${recoveryLatencySec}s) — Mastered autonomic composure under fire`;
-  } else if (recoveryLatencySec <= 18) {
-    verdict = `Moderate Recovery (${recoveryLatencySec}s) — Restored steady pacing after acute tension`;
+  if (bpmSpike < 3) {
+    // Pulse stayed steady at baseline
+    recoveryLatencySec = null;
+    verdict = `Heart rate remained steady at baseline (${baselineBpm} BPM)—no acute cardiac surge detected.`;
+  } else if (recoveryLatencySec && recoveryLatencySec <= 10) {
+    verdict = `Prompt return to baseline pulse (${recoveryLatencySec}s) after +${bpmSpike} BPM surge.`;
+  } else if (recoveryLatencySec && recoveryLatencySec <= 18) {
+    verdict = `Moderate return to baseline (${recoveryLatencySec}s) after +${bpmSpike} BPM surge.`;
+  } else if (recoveryLatencySec) {
+    verdict = `Extended recovery latency (${recoveryLatencySec}s) following acute pulse elevation (+${bpmSpike} BPM).`;
   } else {
-    verdict = `Prolonged Stress (${recoveryLatencySec}s) — Cardiac elevation persisted after pressure moment`;
+    verdict = `Pulse elevated (+${bpmSpike} BPM) during pressure moment; pitch concluded before return to baseline.`;
   }
 
+  // Ghost comparison delta and provenance tracking
   let ghostComparisonDelta = null;
   const ghostStats = ghostTake?.summary?.recoveryStats;
-  if (ghostStats) {
-    const ghostRecSec = ghostStats.recoveryLatencySec || 22;
-    const deltaSec = ghostRecSec - recoveryLatencySec;
-    const ghostSpike = ghostStats.bpmSpike || 16;
-    const deltaSpike = ghostSpike - bpmSpike;
+  if (ghostStats && ghostStats.hasPressureMoment) {
+    const ghostRecSec = ghostStats.recoveryLatencySec;
+    const take1IsDemo = Boolean(ghostTake?.isDemoMode);
+    const take2IsDemo = Boolean(isDemoMode);
+    const isMixedProvenance = take1IsDemo !== take2IsDemo;
+    const isSyntheticProvenance = take1IsDemo || take2IsDemo;
 
-    ghostComparisonDelta = {
-      take1RecoverySec: ghostRecSec,
-      take2RecoverySec: recoveryLatencySec,
-      recoveryDeltaSec: deltaSec,
-      improved: deltaSec > 0,
-      take1Spike: ghostSpike,
-      take2Spike: bpmSpike,
-      spikeDelta: deltaSpike,
-      summaryText:
-        deltaSec > 0
-          ? `🏆 ${deltaSec}s faster recovery than Take 1!`
-          : `Recovery latency consistent with Take 1 (${recoveryLatencySec}s).`,
-    };
+    let provenanceLabel = 'Live Hardware Verified';
+    if (isMixedProvenance) {
+      provenanceLabel = `Mixed Provenance (Take 1: ${take1IsDemo ? 'Demo' : 'Live'}, Take 2: ${take2IsDemo ? 'Demo' : 'Live'})`;
+    } else if (isSyntheticProvenance) {
+      provenanceLabel = 'Synthetic Demo Comparison';
+    }
+
+    if (ghostRecSec != null && recoveryLatencySec != null) {
+      const deltaSec = ghostRecSec - recoveryLatencySec;
+      const ghostSpike = ghostStats.bpmSpike || 0;
+      const deltaSpike = ghostSpike - bpmSpike;
+
+      ghostComparisonDelta = {
+        take1RecoverySec: ghostRecSec,
+        take2RecoverySec: recoveryLatencySec,
+        recoveryDeltaSec: deltaSec,
+        improved: deltaSec > 0,
+        take1Spike: ghostSpike,
+        take2Spike: bpmSpike,
+        spikeDelta: deltaSpike,
+        isSyntheticProvenance,
+        isMixedProvenance,
+        provenanceLabel,
+        summaryText:
+          deltaSec > 0
+            ? `${deltaSec}s faster return to baseline than Take 1`
+            : `Recovery latency was comparable to Take 1 (${recoveryLatencySec}s)`,
+      };
+    } else {
+      ghostComparisonDelta = {
+        take1RecoverySec: ghostRecSec,
+        take2RecoverySec: recoveryLatencySec,
+        recoveryDeltaSec: null,
+        improved: false,
+        take1Spike: ghostStats.bpmSpike || 0,
+        take2Spike: bpmSpike,
+        spikeDelta: 0,
+        isSyntheticProvenance,
+        isMixedProvenance,
+        provenanceLabel,
+        summaryText:
+          bpmSpike < 3
+            ? 'Pulse remained steady without acute surge.'
+            : 'Cardiac surge observed during pressure moment.',
+      };
+    }
   }
 
   return {
-    hasPressureMoment: true,
+    hasPressureMoment: Boolean(
+      moment && (bpmSpike >= 3 || !moment.isAutoDetected),
+    ),
     isAutoDetected: Boolean(moment.isAutoDetected),
     timeSec: markSec,
     baselineBpm,
