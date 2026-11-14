@@ -150,8 +150,12 @@ export default function BreathingCanvas({
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // Draw Inhale/Exhale phase badge directly in the canvas corner
-        if (!isSpeaking && !isBreathHolding) {
+        // Draw Inhale/Exhale phase badge or Speech Gated badge directly in the canvas corner
+        if (isSpeaking) {
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText('🎙️ HELD BASELINE • SPEECH GATED', 14, height - 10);
+        } else if (!isBreathHolding) {
           ctx.font = 'bold 9px monospace';
           ctx.fillStyle = slopeColor;
           ctx.fillText(slopeText, 14, height - 10);
@@ -202,8 +206,8 @@ export default function BreathingCanvas({
         </span>
 
         {isSpeaking ? (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-950/80 border border-sky-500/40 text-sky-300 font-medium flex items-center gap-1">
-            <Mic className="w-2.5 h-2.5" /> Speech Gated
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-950/80 border border-sky-400 text-sky-300 font-bold flex items-center gap-1 shadow-sm">
+            <Mic className="w-2.5 h-2.5 text-sky-400" /> Speech Gated
           </span>
         ) : (
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-medium">
@@ -216,15 +220,27 @@ export default function BreathingCanvas({
       <div className="absolute top-2.5 right-3.5 z-10 flex items-baseline space-x-1.5">
         <span
           className={`text-2xl font-black font-mono tracking-tight ${
-            isBreathHolding ? 'text-red-400' : 'text-emerald-400'
+            isBreathHolding
+              ? 'text-red-400'
+              : isSpeaking
+                ? 'text-sky-400'
+                : 'text-emerald-400'
           }`}
         >
           {animatedRate || '--'}
         </span>
         <span className="text-xs text-slate-400 font-semibold uppercase">
-          br/min
+          {isSpeaking ? 'br/min (held)' : 'br/min'}
         </span>
       </div>
+
+      {/* Speech Gating Active Banner */}
+      {isSpeaking && (
+        <div className="absolute bottom-2.5 left-3.5 z-10 bg-sky-950/95 border border-sky-500/60 px-2.5 py-1 rounded-lg text-[11px] font-bold text-sky-200 flex items-center gap-1.5 shadow-md">
+          <Mic className="w-3 h-3 text-sky-400 animate-pulse" />
+          <span>Speech Motion Gate Active • Holding Optical Baseline</span>
+        </div>
+      )}
 
       {/* Alert Banner if breath holding */}
       {isBreathHolding && (

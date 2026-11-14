@@ -233,11 +233,11 @@ export default function PulseCanvas({
       </div>
 
       {/* Top Right Live Telemetry */}
-      <div className="absolute top-2.5 right-3.5 z-10 flex items-center gap-3">
+      <div className="absolute top-2.5 right-3.5 z-10 flex items-center gap-2.5">
         {ghostAvgBpm && (
-          <div className="hidden sm:flex items-baseline space-x-1 px-2.5 py-0.5 rounded-md bg-purple-950/80 border border-purple-500/40 text-purple-300 text-[11px] shadow-sm">
+          <div className="flex items-baseline space-x-1 px-2.5 py-0.5 rounded-md bg-purple-950/90 border border-purple-500/50 text-purple-300 text-[11px] shadow-sm animate-pulse">
             <span className="font-semibold uppercase tracking-wider text-[10px]">
-              Ghost:
+              👻 Take 1:
             </span>
             <span className="font-bold font-mono text-purple-200">
               {ghostAvgBpm}
@@ -260,6 +260,14 @@ export default function PulseCanvas({
           </span>
         </div>
       </div>
+
+      {/* Legend for Ghost Take violet trace */}
+      {ghostBufferRef && (
+        <div className="absolute bottom-2 left-3.5 z-10 flex items-center gap-1.5 text-[10px] text-purple-300/80 bg-purple-950/70 px-2 py-0.5 rounded border border-purple-500/30 backdrop-blur-sm">
+          <span className="w-3 h-0.5 border-dashed border-t-2 border-purple-400 inline-block" />
+          <span className="font-medium">Take 1 Ghost Curve</span>
+        </div>
+      )}
 
       <canvas
         ref={canvasRef}

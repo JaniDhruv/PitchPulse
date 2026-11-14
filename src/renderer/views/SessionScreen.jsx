@@ -68,6 +68,10 @@ export default function SessionScreen({
   const [currentExpression, setCurrentExpression] = useState('neutral');
   const [isBreathHolding, setIsBreathHolding] = useState(false);
   const [activeNudge, setActiveNudge] = useState(null);
+  const [ghostLiveBpm, setGhostLiveBpm] = useState(
+    ghostTake?.summary?.avgPulse || null,
+  );
+  const lastGhostBpmRef = useRef(null);
 
   // Fast mutable ring buffers for 60fps canvas drawing (0% React re-render lag)
   const pulseBufferRef = useRef(Array.from({ length: 120 }, () => 0));
@@ -292,6 +296,68 @@ export default function SessionScreen({
     };
   }, [apiKey]);
 
+  // Ghost Take time-aligned historical replay loop (replays actual Take 1 pulseSamples in Live & Demo modes)
+  useEffect(() => {
+    if (!ghostTake) return;
+
+    let ghostPhase = 0;
+    let animId;
+    let lastTime = performance.now();
+
+    const updateGhostWave = (now) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      // Current elapsed second in Take 2 (or 0 before recording starts)
+      const currentSec = durationCounterRef.current;
+      const pulseSamples = ghostTake.pulseSamples || [];
+
+      let historicalBpm = ghostTake.summary?.avgPulse || 72;
+      if (pulseSamples.length > 0) {
+        // Look up Take 1 sample aligned to current elapsed time
+        const targetIdx = Math.min(
+          Math.max(0, currentSec),
+          pulseSamples.length - 1,
+        );
+        const sample = pulseSamples[targetIdx];
+        if (sample != null) {
+          historicalBpm = Math.round(
+            typeof sample === 'object'
+              ? (sample.value ?? sample.bpm ?? 72)
+              : sample,
+          );
+        }
+      }
+
+      if (lastGhostBpmRef.current !== historicalBpm) {
+        lastGhostBpmRef.current = historicalBpm;
+        setGhostLiveBpm(historicalBpm);
+      }
+
+      // Physiological frequency matching Take 1's actual recorded heart rate at this second
+      const freq = (historicalBpm / 60) * 4.2;
+      ghostPhase += dt * freq * (Math.PI * 2);
+
+      // Dual-harmonic arterial pulse waveform matching live oscilloscope styling
+      const ghostPpg =
+        Math.sin(ghostPhase) * 0.7 +
+        Math.sin(ghostPhase * 2) * 0.28 +
+        Math.sin(ghostPhase * 3) * 0.1;
+
+      ghostPulseBufferRef.current.push(ghostPpg);
+      if (ghostPulseBufferRef.current.length > 120) {
+        ghostPulseBufferRef.current.shift();
+      }
+
+      animId = requestAnimationFrame(updateGhostWave);
+    };
+
+    animId = requestAnimationFrame(updateGhostWave);
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, [ghostTake]);
+
   // High-fidelity dynamic organic simulation for live biofeedback
   const startSimulator = () => {
     let phase = 0;
@@ -307,21 +373,18 @@ export default function SessionScreen({
       if (pulseBufferRef.current.length > 120) pulseBufferRef.current.shift();
 
       // 2. Dynamic respiratory waveform (60fps canvas feed)
-      const resp = Math.sin(phase * 0.85);
-      breathingBufferRef.current.push(resp);
+      // Talking-gated: hold current baseline trace during vocalization to reject speech motion
+      if (latestMetricsRef.current.isSpeaking) {
+        const lastResp =
+          breathingBufferRef.current[breathingBufferRef.current.length - 1] ??
+          0;
+        breathingBufferRef.current.push(lastResp);
+      } else {
+        const resp = Math.sin(phase * 0.85);
+        breathingBufferRef.current.push(resp);
+      }
       if (breathingBufferRef.current.length > 120)
         breathingBufferRef.current.shift();
-
-      // 3. Ghost Take pulse wave simulation if active
-      if (ghostTake) {
-        const ghostFreq = ((ghostTake.summary?.avgPulse || 88) / 60) * 4;
-        const ghostPpg =
-          Math.sin(phase * ghostFreq) * 0.6 +
-          Math.sin(phase * ghostFreq * 2) * 0.25;
-        ghostPulseBufferRef.current.push(ghostPpg);
-        if (ghostPulseBufferRef.current.length > 120)
-          ghostPulseBufferRef.current.shift();
-      }
 
       // Update React state at comfortable 500ms intervals (every 15 ticks) to avoid React render thrashing
       if (tickCount % 15 === 0) {
@@ -416,13 +479,25 @@ export default function SessionScreen({
         }
       }
       if (metrics.breathing.upperTrace?.length > 0) {
-        metrics.breathing.upperTrace.forEach((bt) => {
-          if (bt?.value != null) {
-            breathingBufferRef.current.push(bt.value);
+        if (latestMetricsRef.current.isSpeaking) {
+          // Model card constraint: hold baseline trace steady during vocalization to reject speech motion
+          const lastVal =
+            breathingBufferRef.current[breathingBufferRef.current.length - 1] ??
+            0;
+          for (let i = 0; i < metrics.breathing.upperTrace.length; i++) {
+            breathingBufferRef.current.push(lastVal);
             if (breathingBufferRef.current.length > 120)
               breathingBufferRef.current.shift();
           }
-        });
+        } else {
+          metrics.breathing.upperTrace.forEach((bt) => {
+            if (bt?.value != null) {
+              breathingBufferRef.current.push(bt.value);
+              if (breathingBufferRef.current.length > 120)
+                breathingBufferRef.current.shift();
+            }
+          });
+        }
       }
     }
 
@@ -806,7 +881,7 @@ export default function SessionScreen({
             <span>
               👻 Ghost Take: Comparing vs Take 1 (
               {ghostTake.isDemoMode ? 'Demo Run' : 'Live SDK'} •{' '}
-              {ghostTake.summary?.avgPulse || 72} BPM)
+              {ghostLiveBpm || ghostTake.summary?.avgPulse || 72} BPM)
             </span>
             {ghostTake.isDemoMode && sensingMode === 'live' && (
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/80 border border-amber-500/40 text-amber-300">
@@ -879,7 +954,7 @@ export default function SessionScreen({
             <PulseCanvas
               bufferRef={pulseBufferRef}
               ghostBufferRef={ghostTake ? ghostPulseBufferRef : null}
-              ghostAvgBpm={ghostTake?.summary?.avgPulse}
+              ghostAvgBpm={ghostLiveBpm || ghostTake?.summary?.avgPulse}
               liveBpm={liveBpm}
               isRecording={isRecording}
               pressureMoment={pressureMoment}
