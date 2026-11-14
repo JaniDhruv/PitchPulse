@@ -1,8 +1,11 @@
 import React, { useEffect, useRef } from 'react';
+import { Heart } from 'lucide-react';
+import { useAnimatedValue } from '../hooks/useAnimatedValue';
 
 /**
  * High-performance 60 FPS HTML5 Canvas for real-time PPG / arterial pulse waveforms.
- * Reads directly from a mutable ring buffer ref without triggering React re-renders.
+ * Features DPI-aware razor-sharp rendering, anatomical heart-rate pulsing,
+ * and rhythm-synchronized arterial bloom dynamics.
  */
 export default function PulseCanvas({
   bufferRef,
@@ -12,6 +15,11 @@ export default function PulseCanvas({
   liveBpm = 72,
 }) {
   const canvasRef = useRef(null);
+  const animatedBpm = useAnimatedValue(liveBpm, { speed: 0.12 });
+  const pulseBeatRef = useRef(0);
+
+  // Compute beat duration in seconds for synchronized cardiac pulsation
+  const beatDuration = Math.max(0.35, Math.min(1.5, 60 / (animatedBpm || 72)));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -20,22 +28,36 @@ export default function PulseCanvas({
     let animationFrameId;
 
     const render = () => {
-      const width = canvas.width;
-      const height = canvas.height;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = canvas.clientWidth || 400;
+      const height = canvas.clientHeight || 120;
 
-      // Dark background with subtle grid
-      ctx.fillStyle = '#0f172a';
+      // Ensure crisp high-DPI canvas backing store
+      const targetW = Math.round(width * dpr);
+      const targetH = Math.round(height * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      pulseBeatRef.current = (pulseBeatRef.current + 0.05) % (Math.PI * 2);
+
+      // Deep dark sleek background
+      ctx.fillStyle = '#0a0f1d';
       ctx.fillRect(0, 0, width, height);
 
-      // Grid lines
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+      // Sleek subtle grid lines
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.22)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let x = 0; x < width; x += 30) {
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
       }
-      for (let y = 0; y < height; y += 20) {
+      for (let y = 0; y < height; y += 22) {
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
       }
@@ -53,16 +75,16 @@ export default function PulseCanvas({
         }
         const gRange = gMax - gMin || 1;
 
-        ctx.strokeStyle = 'rgba(168, 85, 247, 0.45)'; // Soft purple
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.45)';
         ctx.lineWidth = 1.8;
-        ctx.setLineDash([4, 4]); // Dashed ghost line
+        ctx.setLineDash([4, 4]);
 
         ctx.beginPath();
         const gStep = width / (ghostBuffer.length - 1);
         for (let i = 0; i < ghostBuffer.length; i++) {
           const x = i * gStep;
           const normY = (ghostBuffer[i] - gMin) / gRange;
-          const y = height - (normY * (height * 0.7) + height * 0.15);
+          const y = height - (normY * (height * 0.68) + height * 0.16);
           if (i === 0) {
             ctx.moveTo(x, y);
           } else {
@@ -70,12 +92,12 @@ export default function PulseCanvas({
           }
         }
         ctx.stroke();
-        ctx.setLineDash([]); // Reset to solid line for live wave
+        ctx.setLineDash([]);
       }
 
+      // 2. Draw Live Waveform
       const buffer = bufferRef?.current || [];
       if (buffer.length > 1) {
-        // Find min and max for auto-scaling
         let min = Infinity;
         let max = -Infinity;
         for (let i = 0; i < buffer.length; i++) {
@@ -84,22 +106,43 @@ export default function PulseCanvas({
           if (val > max) max = val;
         }
         const range = max - min || 1;
+        const step = width / (buffer.length - 1);
 
-        // Waveform glow
+        // Path for gradient fill below curve
+        ctx.beginPath();
+        for (let i = 0; i < buffer.length; i++) {
+          const x = i * step;
+          const normY = (buffer[i] - min) / range;
+          const y = height - (normY * (height * 0.68) + height * 0.16);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+
+        const areaGrad = ctx.createLinearGradient(0, height * 0.15, 0, height);
+        areaGrad.addColorStop(0, 'rgba(56, 189, 248, 0.22)');
+        areaGrad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+        ctx.fillStyle = areaGrad;
+        ctx.fill();
+
+        // Main waveform stroke with neon bloom
         ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 10;
         ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2.4;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
         ctx.beginPath();
-        const step = width / (buffer.length - 1);
         for (let i = 0; i < buffer.length; i++) {
           const x = i * step;
-          // Normalize to canvas height with 15% margin
           const normY = (buffer[i] - min) / range;
-          const y = height - (normY * (height * 0.7) + height * 0.15);
+          const y = height - (normY * (height * 0.68) + height * 0.16);
           if (i === 0) {
             ctx.moveTo(x, y);
           } else {
@@ -108,20 +151,29 @@ export default function PulseCanvas({
         }
         ctx.stroke();
 
-        // Pulsing lead dot
-        const lastX = width;
+        // Pulsing lead dot & expanding halo
+        const lastX = width - 3;
         const lastNormY = (buffer[buffer.length - 1] - min) / range;
-        const lastY = height - (lastNormY * (height * 0.7) + height * 0.15);
-        ctx.shadowBlur = 12;
+        const lastY = height - (lastNormY * (height * 0.68) + height * 0.16);
+
+        // Halo ripple
+        const haloRadius = 4 + Math.sin(pulseBeatRef.current) * 3;
+        ctx.shadowBlur = 14;
         ctx.shadowColor = '#38bdf8';
-        ctx.fillStyle = '#e0f2fe';
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
         ctx.beginPath();
-        ctx.arc(lastX - 2, lastY, 4, 0, Math.PI * 2);
+        ctx.arc(lastX, lastY, Math.max(2, haloRadius + 3), 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bright nucleus
+        ctx.fillStyle = '#f0f9ff';
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, 3.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       } else {
-        // Idle heartbeat simulation if buffer is empty
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        // Idle heartbeat trace
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(0, height / 2);
@@ -129,6 +181,7 @@ export default function PulseCanvas({
         ctx.stroke();
       }
 
+      ctx.restore();
       animationFrameId = requestAnimationFrame(render);
     };
 
@@ -139,35 +192,67 @@ export default function PulseCanvas({
     };
   }, [bufferRef, ghostBufferRef]);
 
+  // Rhythm qualitative description
+  let rhythmLabel = 'Calm Resting';
+  let rhythmColor = 'text-emerald-400 bg-emerald-950/60 border-emerald-500/30';
+  if (animatedBpm > 95) {
+    rhythmLabel = 'Elevated Cadence';
+    rhythmColor = 'text-red-400 bg-red-950/60 border-red-500/30';
+  } else if (animatedBpm > 85) {
+    rhythmLabel = 'Alert / Active';
+    rhythmColor = 'text-amber-400 bg-amber-950/60 border-amber-500/30';
+  }
+
   return (
-    <div className="relative w-full h-full bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden shadow-inner">
-      <div className="absolute top-2.5 left-3 z-10 flex items-center space-x-2">
-        <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></span>
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+    <div className="relative w-full h-full bg-slate-900/90 rounded-2xl border border-slate-800/80 overflow-hidden shadow-lg backdrop-blur-sm transition-all duration-300">
+      {/* Top Header */}
+      <div className="absolute top-2.5 left-3.5 z-10 flex items-center space-x-2">
+        <div
+          className="flex items-center justify-center w-5 h-5 rounded-full bg-sky-500/15 border border-sky-400/40 text-sky-400 animate-heartbeat"
+          style={{ animationDuration: `${beatDuration}s` }}
+        >
+          <Heart className="w-3 h-3 fill-sky-400/80 text-sky-300" />
+        </div>
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
           Pulse Plethysmogram
+        </span>
+        <span
+          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${rhythmColor}`}
+        >
+          {rhythmLabel}
         </span>
       </div>
 
-      <div className="absolute top-2.5 right-3 z-10 flex items-center gap-3">
+      {/* Top Right Live Telemetry */}
+      <div className="absolute top-2.5 right-3.5 z-10 flex items-center gap-3">
         {ghostAvgBpm && (
-          <div className="hidden sm:flex items-baseline space-x-1 px-2 py-0.5 rounded bg-purple-950/80 border border-purple-500/40 text-purple-300 text-[11px]">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Ghost:</span>
-            <span className="font-bold font-mono text-purple-300">{ghostAvgBpm}</span>
+          <div className="hidden sm:flex items-baseline space-x-1 px-2.5 py-0.5 rounded-md bg-purple-950/80 border border-purple-500/40 text-purple-300 text-[11px] shadow-sm">
+            <span className="font-semibold uppercase tracking-wider text-[10px]">
+              Ghost:
+            </span>
+            <span className="font-bold font-mono text-purple-200">{ghostAvgBpm}</span>
             <span className="text-[10px] text-purple-400">BPM</span>
           </div>
         )}
-        <div className="flex items-baseline space-x-1">
-          <span className="text-xl font-bold font-mono text-sky-400">{liveBpm || '--'}</span>
-          <span className="text-xs text-slate-400 font-medium">BPM</span>
+        <div className="flex items-baseline space-x-1.5">
+          <span
+            className="text-2xl font-black font-mono text-sky-400 tracking-tight transition-transform duration-150 inline-block"
+            style={{
+              transform: `scale(${1.0 + (isRecording ? 0.05 : 0)})`,
+            }}
+          >
+            {animatedBpm || '--'}
+          </span>
+          <span className="text-xs text-slate-400 font-semibold uppercase">
+            BPM
+          </span>
         </div>
       </div>
+
       <canvas
         ref={canvasRef}
-        width={400}
-        height={130}
         className="w-full h-full block"
       />
     </div>
   );
 }
-
