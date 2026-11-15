@@ -41,10 +41,10 @@ export default function ConsentScreen({
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-100">
-              Camera Consent & Data Handling
+              Start Your Recovery Rehearsal
             </h1>
             <p className="text-xs text-slate-400">
-              PitchPulse Privacy & Responsible Sensing Architecture
+              Private, camera-based practice for high-pressure speaking
             </p>
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function ConsentScreen({
 
         {/* SmartSpectra API Key Input */}
         <div className="mb-6 p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-          <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
+          <label className="text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Key className="w-3.5 h-3.5 text-sky-400" />
               SmartSpectra API Key
@@ -169,7 +169,7 @@ export default function ConsentScreen({
             onClick={handleStart}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg ${
               hasAgreed
-                ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white hover:opacity-95 shadow-sky-500/25 cursor-pointer'
+                ? 'bg-linear-to-r from-sky-500 to-indigo-600 text-white hover:opacity-95 shadow-sky-500/25 cursor-pointer'
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
             }`}
           >

@@ -900,7 +900,7 @@ export default function SessionScreen({
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-sky-500/25 font-black text-lg">
+          <div className="w-10 h-10 rounded-2xl bg-linear-to-tr from-sky-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-sky-500/25 font-black text-lg">
             P
           </div>
           <div>
@@ -930,7 +930,7 @@ export default function SessionScreen({
               )}
             </h1>
             <p className="text-[11px] text-slate-400">
-              Contactless Biometric Presentation Coach
+              Recovery rehearsal for high-pressure speaking
             </p>
           </div>
         </div>
@@ -988,8 +988,8 @@ export default function SessionScreen({
       {/* Main Studio Grid: Narrowed, Readable 3-Signal Cockpit */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0">
         {/* Left Area: Camera Preview & Tactical Controls (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col min-h-[380px]">
-          <div className="flex-1 relative rounded-3xl overflow-hidden min-h-[360px]">
+        <div className="lg:col-span-7 flex flex-col min-h-95">
+          <div className="flex-1 relative rounded-3xl overflow-hidden min-h-90">
             <CameraPreview
               stream={stream}
               validationHint={validationHint}
@@ -1011,7 +1011,7 @@ export default function SessionScreen({
         {/* Right Area: The 3 Readable Signals (5 cols) */}
         <div className="lg:col-span-5 flex flex-col space-y-3 min-h-0 justify-between">
           {/* Signal 1: Cardiac & Autonomic Recovery */}
-          <div className="flex-1 min-h-[145px]">
+          <div className="flex-1 min-h-36.25">
             <PulseCanvas
               bufferRef={pulseBufferRef}
               ghostBufferRef={ghostTake ? ghostPulseBufferRef : null}
@@ -1024,7 +1024,7 @@ export default function SessionScreen({
           </div>
 
           {/* Signal 2: Audience Gaze Focus */}
-          <div className="min-h-[155px]">
+          <div className="min-h-38.75">
             <EyeContactMeter
               score={eyeContactScore}
               isCentered={isGazeCentered}
@@ -1033,7 +1033,7 @@ export default function SessionScreen({
           </div>
 
           {/* Signal 3: Breath Pacing & Rhythm */}
-          <div className="flex-1 min-h-[145px]">
+          <div className="flex-1 min-h-36.25">
             <BreathingCanvas
               bufferRef={breathingBufferRef}
               liveRate={liveBreathRate}
@@ -1072,7 +1072,7 @@ export default function SessionScreen({
                 <>
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
                   <span className="text-slate-300 font-medium">
-                    SmartSpectra SDK Active — Contactless Camera Vitals Ready
+                    Live recovery signals ready — SmartSpectra SDK active
                   </span>
                 </>
               )}
@@ -1103,15 +1103,19 @@ export default function SessionScreen({
           {!isRecording ? (
             <button
               onClick={handleStartPitchClick}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-sky-500/25 transition-all cursor-pointer transform hover:scale-[1.02]"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-linear-to-r from-sky-500 via-indigo-600 to-purple-600 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-sky-500/25 transition-all cursor-pointer transform hover:scale-[1.02]"
             >
               <Play className="w-4 h-4 fill-white" />
-              <span>Record Practice Pitch</span>
+              <span>
+                {ghostTake
+                  ? 'Start Take 2: Beat Your Ghost'
+                  : 'Start Take 1: Mark a Pressure Moment'}
+              </span>
             </button>
           ) : (
             <button
               onClick={handleStopRecording}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-red-500/25 transition-all cursor-pointer transform hover:scale-[1.02]"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-linear-to-r from-red-500 to-rose-600 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-red-500/25 transition-all cursor-pointer transform hover:scale-[1.02]"
             >
               <Square className="w-4 h-4 fill-white" />
               <span>Finish & Analyze Score</span>

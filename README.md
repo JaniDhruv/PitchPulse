@@ -1,6 +1,6 @@
 # 🎯 PitchPulse
 
-### Contactless Biometric Presentation & Mock Interview Coach
+### Recovery Rehearsal for High-Pressure Speaking
 
 \*Powered by the **Presage SmartSpectra SDK\***
 
@@ -16,11 +16,11 @@
 
 ## 💡 What is PitchPulse?
 
-**PitchPulse** is a contactless physiological presentation coach that answers one high-stakes question:
+**PitchPulse** is a private recovery rehearsal tool that answers one high-stakes question:
 
-> **"When you hit the exact moment you freeze or stumble under pressure, can you recover your composure faster on the next take?"**
+> **"When you hit the exact moment pressure rises, can you recover faster on the next take?"**
 
-Instead of giving speakers a generic "confidence score" or a cluttered wall of passive biometric graphs, PitchPulse introduces **Ghost Take**: a Mario Kart–style racing ghost for your autonomic nervous system. You mark the exact slide or question where pressure spikes, measure your physiological recovery latency contactlessly via **Presage SmartSpectra**, and then re-pitch against your previous take's translucent physiological curve to prove your recovery improved.
+Instead of scoring confidence or overwhelming speakers with passive biometric graphs, PitchPulse turns recovery into a repeatable rehearsal loop. You mark the exact slide or question where pressure rises, measure recovery latency through **Presage SmartSpectra**, then re-pitch against your previous take's translucent **Ghost Take** curve to see whether recovery improved.
 
 ---
 
