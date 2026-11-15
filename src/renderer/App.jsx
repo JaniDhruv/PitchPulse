@@ -5,6 +5,8 @@ import ScoreRevealScreen from './views/ScoreRevealScreen';
 import ReplayScreen from './views/ReplayScreen';
 import HistoryScreen from './views/HistoryScreen';
 
+const DEFAULT_ENV_API_KEY = import.meta.env.VITE_SMARTSPECTRA_API_KEY;
+
 export default function App() {
   const [hasConsented, setHasConsented] = useState(() => {
     return localStorage.getItem('pitchpulse_consent') === 'true';
@@ -13,7 +15,9 @@ export default function App() {
     return localStorage.getItem('pitchpulse_telemetry') === 'true';
   });
   const [apiKey, setApiKey] = useState(() => {
-    return localStorage.getItem('pitchpulse_api_key') || '';
+    return (
+      localStorage.getItem('pitchpulse_api_key') || DEFAULT_ENV_API_KEY || ''
+    );
   });
   const [isKeyLoaded, setIsKeyLoaded] = useState(false);
   const [currentView, setCurrentView] = useState('studio'); // 'studio' | 'reveal' | 'replay' | 'history'
@@ -22,16 +26,20 @@ export default function App() {
 
   useEffect(() => {
     async function loadKey() {
+      let resolvedKey = DEFAULT_ENV_API_KEY;
       if (window.pitchPulseAPI) {
         try {
           const key = await window.pitchPulseAPI.getApiKey();
-          if (key) {
-            setApiKey(key);
-            localStorage.setItem('pitchpulse_api_key', key);
+          if (key && key.trim().length > 5) {
+            resolvedKey = key.trim();
           }
         } catch (err) {
           console.warn('Failed to load API key from main IPC:', err);
         }
+      }
+      if (resolvedKey) {
+        setApiKey(resolvedKey);
+        localStorage.setItem('pitchpulse_api_key', resolvedKey);
       }
       setIsKeyLoaded(true);
     }
@@ -39,11 +47,15 @@ export default function App() {
   }, []);
 
   const handleConsentAccept = (key, telemetry = false) => {
+    const finalKey =
+      (key && key.trim().length > 5 ? key.trim() : null) ||
+      apiKey ||
+      DEFAULT_ENV_API_KEY;
     localStorage.setItem('pitchpulse_consent', 'true');
     localStorage.setItem('pitchpulse_telemetry', String(telemetry));
-    if (key) {
-      localStorage.setItem('pitchpulse_api_key', key);
-      setApiKey(key);
+    if (finalKey) {
+      localStorage.setItem('pitchpulse_api_key', finalKey);
+      setApiKey(finalKey);
     }
     setHasConsented(true);
     setEnableTelemetry(telemetry);

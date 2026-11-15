@@ -10,6 +10,10 @@ import { bindSmartSpectraIpc } from '@smartspectra/node-sdk/main';
 
 // Load environment variables from .env
 dotenv.config();
+try {
+  dotenv.config({ path: path.join(__dirname, '../../.env') });
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+} catch {}
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -17,7 +21,7 @@ if (started) {
 }
 
 let mainWindow = null;
-let customApiKey = process.env.SMARTSPECTRA_API_KEY || '';
+let customApiKey = process.env.SMARTSPECTRA_API_KEY;
 
 const getSessionsDir = () => {
   const dir = path.join(app.getPath('userData'), 'pitchpulse_sessions');

@@ -20,16 +20,31 @@ async function getSdkModules() {
       import('@smartspectra/node-sdk/renderer'),
       import('@smartspectra/node-sdk/messages'),
     ]);
+    const sdkClass =
+      sdkModule.SmartSpectraSDK ||
+      sdkModule.default?.SmartSpectraSDK ||
+      sdkModule.default;
+    const cardio = sdkModule.cardioMetrics ||
+      sdkModule.default?.cardioMetrics || [15, 16, 17];
+    const breathing = sdkModule.breathingMetrics ||
+      sdkModule.default?.breathingMetrics || [0, 1, 2, 3, 4, 5, 6, 7];
+    const face = sdkModule.faceMetrics ||
+      sdkModule.default?.faceMetrics || [11, 12, 13, 14];
+    const decode =
+      msgModule.decodeMetrics ||
+      msgModule.default?.decodeMetrics ||
+      msgModule.default;
+
     sdkModulesCache = {
-      SmartSpectraSDK: sdkModule.SmartSpectraSDK,
-      cardioMetrics: sdkModule.cardioMetrics || [],
-      breathingMetrics: sdkModule.breathingMetrics || [],
-      faceMetrics: sdkModule.faceMetrics || [],
-      decodeMetrics: msgModule.decodeMetrics,
+      SmartSpectraSDK: sdkClass,
+      cardioMetrics: cardio,
+      breathingMetrics: breathing,
+      faceMetrics: face,
+      decodeMetrics: decode,
     };
     return sdkModulesCache;
   } catch (err) {
-    console.warn('SmartSpectra SDK modules unavailable in renderer:', err);
+    console.error('SmartSpectra SDK modules unavailable in renderer:', err);
     return null;
   }
 }
@@ -193,6 +208,11 @@ export default function SessionScreen({
         }
       }
 
+      console.log(
+        '[PitchPulse] Initializing sensing pipeline. apiKey present:',
+        Boolean(apiKey && apiKey.trim().length > 5),
+      );
+
       if (apiKey && apiKey.trim().length > 5) {
         const modules = await getSdkModules();
         if (modules && modules.SmartSpectraSDK && !isCancelled) {
@@ -264,7 +284,17 @@ export default function SessionScreen({
               err,
             );
           }
+        } else {
+          console.warn(
+            '[PitchPulse] SmartSpectraSDK class not found in loaded modules:',
+            modules,
+          );
         }
+      } else {
+        console.warn(
+          '[PitchPulse] No valid apiKey provided to SessionScreen. Received:',
+          apiKey,
+        );
       }
 
       // If SDK direct start failed or no key provided, activate demo simulation mode
