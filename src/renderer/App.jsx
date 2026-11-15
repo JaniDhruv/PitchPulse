@@ -5,7 +5,20 @@ import ScoreRevealScreen from './views/ScoreRevealScreen';
 import ReplayScreen from './views/ReplayScreen';
 import HistoryScreen from './views/HistoryScreen';
 
-const DEFAULT_ENV_API_KEY = import.meta.env.VITE_SMARTSPECTRA_API_KEY;
+const DEFAULT_ENV_API_KEY = import.meta.env.VITE_SMARTSPECTRA_API_KEY || '';
+
+const getInitialStoredKey = () => {
+  try {
+    const stored = localStorage.getItem('pitchpulse_api_key');
+    if (stored && stored.trim().length > 5) {
+      return stored.trim();
+    }
+  } catch {}
+  if (DEFAULT_ENV_API_KEY && DEFAULT_ENV_API_KEY.trim().length > 5) {
+    return DEFAULT_ENV_API_KEY.trim();
+  }
+  return '';
+};
 
 export default function App() {
   const [hasConsented, setHasConsented] = useState(() => {
@@ -14,11 +27,7 @@ export default function App() {
   const [enableTelemetry, setEnableTelemetry] = useState(() => {
     return localStorage.getItem('pitchpulse_telemetry') === 'true';
   });
-  const [apiKey, setApiKey] = useState(() => {
-    return (
-      localStorage.getItem('pitchpulse_api_key') || DEFAULT_ENV_API_KEY || ''
-    );
-  });
+  const [apiKey, setApiKey] = useState(getInitialStoredKey);
   const [isKeyLoaded, setIsKeyLoaded] = useState(false);
   const [currentView, setCurrentView] = useState('studio'); // 'studio' | 'reveal' | 'replay' | 'history'
   const [activeSession, setActiveSession] = useState(null);
@@ -26,7 +35,10 @@ export default function App() {
 
   useEffect(() => {
     async function loadKey() {
-      let resolvedKey = DEFAULT_ENV_API_KEY;
+      let resolvedKey =
+        DEFAULT_ENV_API_KEY && DEFAULT_ENV_API_KEY.trim().length > 5
+          ? DEFAULT_ENV_API_KEY.trim()
+          : '';
       if (window.pitchPulseAPI) {
         try {
           const key = await window.pitchPulseAPI.getApiKey();
@@ -39,7 +51,9 @@ export default function App() {
       }
       if (resolvedKey) {
         setApiKey(resolvedKey);
-        localStorage.setItem('pitchpulse_api_key', resolvedKey);
+        try {
+          localStorage.setItem('pitchpulse_api_key', resolvedKey);
+        } catch {}
       }
       setIsKeyLoaded(true);
     }
@@ -49,14 +63,18 @@ export default function App() {
   const handleConsentAccept = (key, telemetry = false) => {
     const finalKey =
       (key && key.trim().length > 5 ? key.trim() : null) ||
-      apiKey ||
-      DEFAULT_ENV_API_KEY;
-    localStorage.setItem('pitchpulse_consent', 'true');
-    localStorage.setItem('pitchpulse_telemetry', String(telemetry));
-    if (finalKey) {
-      localStorage.setItem('pitchpulse_api_key', finalKey);
-      setApiKey(finalKey);
-    }
+      (apiKey && apiKey.trim().length > 5 ? apiKey.trim() : null) ||
+      (DEFAULT_ENV_API_KEY && DEFAULT_ENV_API_KEY.trim().length > 5
+        ? DEFAULT_ENV_API_KEY.trim()
+        : null);
+    try {
+      localStorage.setItem('pitchpulse_consent', 'true');
+      localStorage.setItem('pitchpulse_telemetry', String(telemetry));
+      if (finalKey) {
+        localStorage.setItem('pitchpulse_api_key', finalKey);
+        setApiKey(finalKey);
+      }
+    } catch {}
     setHasConsented(true);
     setEnableTelemetry(telemetry);
   };

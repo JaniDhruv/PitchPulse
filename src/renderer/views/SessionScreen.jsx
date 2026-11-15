@@ -66,6 +66,7 @@ export default function SessionScreen({
 
   // Sensing Mode & Hardware Integrity State
   const [sensingMode, setSensingMode] = useState('initializing'); // 'initializing' | 'live' | 'calibrating' | 'demo'
+  const [sdkError, setSdkError] = useState(null);
   const [cardioConfidence, setCardioConfidence] = useState(0);
   const [calibrationSec, setCalibrationSec] = useState(0);
 
@@ -208,12 +209,15 @@ export default function SessionScreen({
         }
       }
 
+      const effectiveKey =
+        apiKey && apiKey.trim().length > 5 ? apiKey.trim() : null;
+
       console.log(
-        '[PitchPulse] Initializing sensing pipeline. apiKey present:',
-        Boolean(apiKey && apiKey.trim().length > 5),
+        '[PitchPulse] Initializing sensing pipeline. effectiveKey present:',
+        Boolean(effectiveKey),
       );
 
-      if (apiKey && apiKey.trim().length > 5) {
+      if (effectiveKey) {
         const modules = await getSdkModules();
         if (modules && modules.SmartSpectraSDK && !isCancelled) {
           try {
@@ -227,7 +231,7 @@ export default function SessionScreen({
             } = modules;
 
             const sdk = new SmartSpectraSDK({
-              apiKey: apiKey.trim(),
+              apiKey: effectiveKey,
               enableTelemetry: Boolean(enableTelemetry),
               requestedMetrics: [
                 ...cardioMetrics,
@@ -252,11 +256,23 @@ export default function SessionScreen({
               if (!isCancelled) setValidationHint(hint || '');
             });
 
+            sdk.on('error', (code, msg, retryable) => {
+              console.error(
+                '[SmartSpectra Native Error]',
+                code,
+                msg,
+                retryable,
+              );
+              if (!isCancelled) {
+                setSdkError(`SmartSpectra Code ${code}: ${msg}`);
+              }
+            });
+
             let calibCount = 0;
             const calibInterval = setInterval(() => {
               calibCount += 1;
               if (calibCount <= 20) {
-                setCalibrationSec(calibCount);
+                if (!isCancelled) setCalibrationSec(calibCount);
               } else {
                 clearInterval(calibInterval);
               }
@@ -283,23 +299,29 @@ export default function SessionScreen({
               'SmartSpectra direct acquisition failed or offline. Starting organic simulator mode:',
               err,
             );
+            if (!isCancelled)
+              setSdkError(err.message || 'SDK initialization failure');
           }
         } else {
           console.warn(
             '[PitchPulse] SmartSpectraSDK class not found in loaded modules:',
             modules,
           );
+          if (!isCancelled) setSdkError('SmartSpectra modules unavailable');
         }
       } else {
         console.warn(
           '[PitchPulse] No valid apiKey provided to SessionScreen. Received:',
           apiKey,
         );
+        if (!isCancelled) setSdkError('No Live Key');
       }
 
       // If SDK direct start failed or no key provided, activate demo simulation mode
-      setSensingMode('demo');
-      startSimulator();
+      if (!isCancelled) {
+        setSensingMode('demo');
+        startSimulator();
+      }
     }
 
     initSdk();
@@ -324,7 +346,7 @@ export default function SessionScreen({
         stream.getTracks().forEach((t) => t.stop());
       }
     };
-  }, [apiKey]);
+  }, [apiKey, enableTelemetry]);
 
   // Ghost Take time-aligned historical replay loop (replays actual Take 1 pulseSamples in Live & Demo modes)
   useEffect(() => {
@@ -891,13 +913,20 @@ export default function SessionScreen({
               )}
               {sensingMode === 'calibrating' && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950 border border-sky-500/40 text-sky-400">
-                  ⏳ Calibrating SDK Baseline
+                  ⏳ Calibrating SDK Baseline ({calibrationSec}s / 20s)
                 </span>
               )}
               {sensingMode === 'demo' && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 border border-amber-500/40 text-amber-400">
-                  ⚠️ Demo Mode (No Live Key)
-                </span>
+                <button
+                  onClick={onOpenSettings}
+                  title="Configure SmartSpectra API Key in Settings"
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 border border-amber-500/40 text-amber-400 hover:bg-amber-900/80 transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <span>⚠️ Demo Mode ({sdkError || 'No Live Key'})</span>
+                  <span className="underline opacity-80 text-[9px]">
+                    Settings ⚙
+                  </span>
+                </button>
               )}
             </h1>
             <p className="text-[11px] text-slate-400">
@@ -971,6 +1000,8 @@ export default function SessionScreen({
               sensingMode={sensingMode}
               cardioConfidence={cardioConfidence}
               calibrationSec={calibrationSec}
+              sdkError={sdkError}
+              onOpenSettings={onOpenSettings}
               pressureMoment={pressureMoment}
               onMarkPressureMoment={markPressureMoment}
             />
@@ -1057,8 +1088,10 @@ export default function SessionScreen({
                 <>
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
                   <span className="text-amber-300 font-medium">
-                    Demo Mode Active — Enter SmartSpectra API Key in Settings
-                    for Live Sensing
+                    Demo Mode Active —{' '}
+                    {sdkError
+                      ? `${sdkError} (Click Settings ⚙ to update key)`
+                      : 'Enter SmartSpectra API Key in Settings for Live Sensing'}
                   </span>
                 </>
               )}

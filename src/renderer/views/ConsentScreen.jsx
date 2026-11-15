@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Camera,
@@ -17,6 +17,12 @@ export default function ConsentScreen({
   const [apiKey, setApiKey] = useState(savedApiKey);
   const [enableTelemetry, setEnableTelemetry] = useState(initialTelemetry);
   const [hasAgreed, setHasAgreed] = useState(false);
+
+  useEffect(() => {
+    if (savedApiKey && savedApiKey.trim().length > 5 && !apiKey) {
+      setApiKey(savedApiKey.trim());
+    }
+  }, [savedApiKey, apiKey]);
 
   const handleStart = async () => {
     if (!hasAgreed) return;

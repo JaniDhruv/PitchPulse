@@ -13,6 +13,8 @@ export default function CameraPreview({
   sensingMode = 'demo', // 'live' | 'calibrating' | 'demo'
   cardioConfidence = 0,
   calibrationSec = 0,
+  sdkError = null,
+  onOpenSettings = null,
   pressureMoment = null,
   onMarkPressureMoment = null,
 }) {
@@ -105,9 +107,25 @@ export default function CameraPreview({
         )}
 
         {sensingMode === 'demo' && (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/90 border border-amber-500/60 text-amber-300 backdrop-blur-md shadow-lg text-xs font-bold">
+          <div
+            onClick={onOpenSettings}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/90 border border-amber-500/60 text-amber-300 backdrop-blur-md shadow-lg text-xs font-bold ${onOpenSettings ? 'cursor-pointer hover:bg-amber-900/90' : ''}`}
+            title={
+              onOpenSettings
+                ? 'Open Settings to enter SmartSpectra API Key'
+                : ''
+            }
+          >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-            <span>⚠️ DEMO DATA — NO LIVE SENSING</span>
+            <span>
+              ⚠️ DEMO DATA —{' '}
+              {sdkError ? sdkError.toUpperCase() : 'NO LIVE SENSING'}
+            </span>
+            {onOpenSettings && (
+              <span className="text-[10px] text-amber-400 underline ml-0.5">
+                Settings ⚙
+              </span>
+            )}
           </div>
         )}
 

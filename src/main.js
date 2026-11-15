@@ -4,16 +4,64 @@ delete process.env.ELECTRON_RUN_AS_NODE;
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import dotenv from 'dotenv';
 import started from 'electron-squirrel-startup';
 import { bindSmartSpectraIpc } from '@smartspectra/node-sdk/main';
 
-// Load environment variables from .env
-dotenv.config();
-try {
-  dotenv.config({ path: path.join(__dirname, '../../.env') });
-  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-} catch {}
+// Dynamically locate and parse local .env without baking or committing secrets
+const findAndLoadEnvKey = () => {
+  if (
+    process.env.SMARTSPECTRA_API_KEY &&
+    process.env.SMARTSPECTRA_API_KEY.trim().length > 5
+  ) {
+    return process.env.SMARTSPECTRA_API_KEY.trim();
+  }
+
+  const candidateDirs = [
+    process.cwd(),
+    path.join(process.cwd(), 'PitchPulse'),
+    __dirname,
+    path.join(__dirname, '..'),
+    path.join(__dirname, '..', '..'),
+    path.join(__dirname, '..', '..', 'PitchPulse'),
+  ];
+
+  try {
+    if (app && typeof app.getAppPath === 'function') {
+      candidateDirs.push(app.getAppPath());
+      candidateDirs.push(path.join(app.getAppPath(), '..'));
+    }
+  } catch {}
+
+  for (const dir of candidateDirs) {
+    try {
+      const envPath = path.resolve(dir, '.env');
+      if (fsSync.existsSync(envPath)) {
+        dotenv.config({ path: envPath });
+        const rawContent = fsSync.readFileSync(envPath, 'utf-8');
+        const lines = rawContent.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('SMARTSPECTRA_API_KEY=')) {
+            const rawVal = trimmed
+              .slice('SMARTSPECTRA_API_KEY='.length)
+              .trim()
+              .replace(/^["']|["']$/g, '');
+            if (rawVal.length > 5) {
+              process.env.SMARTSPECTRA_API_KEY = rawVal;
+              return rawVal;
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+  return '';
+};
+
+// Initial environment discovery
+const initialKey = findAndLoadEnvKey();
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -21,7 +69,7 @@ if (started) {
 }
 
 let mainWindow = null;
-let customApiKey = process.env.SMARTSPECTRA_API_KEY;
+let customApiKey = initialKey;
 
 const getSessionsDir = () => {
   const dir = path.join(app.getPath('userData'), 'pitchpulse_sessions');
@@ -40,11 +88,19 @@ const ensureSessionsDir = async () => {
 
 const setupIpcHandlers = () => {
   ipcMain.handle('pitchpulse:get-api-key', () => {
-    return customApiKey || process.env.SMARTSPECTRA_API_KEY || '';
+    const key =
+      customApiKey ||
+      findAndLoadEnvKey() ||
+      process.env.SMARTSPECTRA_API_KEY ||
+      '';
+    return key;
   });
 
   ipcMain.handle('pitchpulse:save-api-key', (_event, key) => {
-    customApiKey = key.trim();
+    if (key && typeof key === 'string') {
+      customApiKey = key.trim();
+      process.env.SMARTSPECTRA_API_KEY = customApiKey;
+    }
     return true;
   });
 
