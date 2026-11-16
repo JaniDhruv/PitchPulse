@@ -28,10 +28,11 @@
   <img src="https://img.shields.io/badge/Native_FFI-koffi_C++-orange" alt="Native FFI Koffi" />
   <img src="https://img.shields.io/badge/Tailwind-4.1.0-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind 4" />
   <img src="https://img.shields.io/badge/Vite-8.3.6-646CFF?logo=vite&logoColor=white" alt="Vite 8" />
-  <img src="https://img.shields.io/badge/Privacy-100%25_Local_Air--Gapped-success" alt="100% Local Processing" />
+  <img src="https://img.shields.io/badge/Privacy-Local_Frame_Processing-success" alt="Local Frame Processing" />
 </p>
 
 ---
+
 ## 📹 Video Walkthrough
 
 <a href="https://www.youtube.com/watch?v=-qHHrUmUZfs">
@@ -46,17 +47,17 @@ Watch the complete unedited demonstration showing live **Presage SmartSpectra SD
 
 ## 💡 The Core Problem: Why Conventional Presentation Coaching Fails
 
-Over **75% of people** suffer from speech anxiety (_glossophobia_). When preparing for an investor pitch, conference talk, or job interview, speakers don't fail continuously across 10 minutes — they stumble at **one specific pressure point**: the valuation slide, an aggressive objection, or a forgotten transition. Once adrenaline surges, peripheral blood vessels constrict, heart rate spikes, and composure unravels.
+Public speaking anxiety is a widespread challenge in professional communication. When preparing for an investor pitch, conference talk, or job interview, speakers often stumble at **one specific pressure point**: the valuation slide, an aggressive objection, or a forgotten transition. Under sudden pressure, heart rate rises and breathing patterns become irregular.
 
-Conventional presentation coaches offer little help. They record your video, run an LLM, and output a vague, post-hoc verdict like _"74% Confidence Score."_ Telling a presenter they looked nervous 15 minutes after they stepped off stage has zero neuromuscular training value. Furthermore, Presage's own medical model cards rightly warn that optical rPPG sensors should **never** be used to deliver normative judgments on human confidence or diagnose emotion.
+Conventional presentation coaches offer little help. They record your video, run an LLM, and output a vague, post-hoc verdict like _"74% Confidence Score."_ Telling a presenter they looked nervous 15 minutes after they stepped off stage has limited training value. Furthermore, Presage's SDK guidance and model documentation rightly emphasizes that optical rPPG sensors should **never** be used to deliver normative judgments on human confidence or diagnose emotion.
 
 **PitchPulse** takes a fundamentally different, scientifically grounded approach: **Autonomic Recovery Rehearsal**.
 
 Instead of grading how confident you "look," PitchPulse helps you rehearse your physiological recovery:
 
-1. **Mark the Crisis Moment**: While rehearsing, tap `Spacebar` the exact second you tackle your toughest slide or question.
-2. **Measure Recovery Latency**: PitchPulse anchors your pre-moment resting pulse and clocks the exact seconds until your heart rate returns to within $\pm 4\text{ BPM}$ of baseline.
-3. **Ghost Take (Mario Kart for Your Nervous System)**: For Take 2, your first take’s recorded pulse timeline appears as a **translucent violet Ghost Curve** behind your live plethysmogram. You can literally watch your live pulse remain calm while your ghost curve spikes from last time.
+1. **Mark the Crisis Moment**: While rehearsing, tap `Spacebar` the exact moment you tackle your toughest slide or question.
+2. **Measure Recovery Latency**: PitchPulse anchors your pre-moment resting pulse and estimates recovery latency using the elapsed time until pulse returns within the app's baseline threshold.
+3. **Ghost Take (Comparative Rehearsal)**: For Take 2, your first take’s recorded pulse timeline appears as a **translucent violet Ghost Curve** behind your live plethysmogram. You can visually compare your live pulse against your previous take's curve in real time.
 
 > _"PitchPulse does not judge confidence or diagnose anxiety. It helps speakers privately measure and rehearse their own physiological recovery pattern across repeated takes."_
 
@@ -72,7 +73,7 @@ PitchPulse transforms presentation practice into a **closed-loop recovery traini
 │  Speaker tackles difficult opening or hostile objection.               │
 │  Hits [⚡ Spacebar] at the hard moment.                                 │
 │  SmartSpectra captures cardiac surge (e.g. 74 BPM → 92 BPM).            │
-│  PitchPulse clocks exact Recovery Latency: 22s until baseline returns. │
+│  PitchPulse estimates Recovery Latency: 22s until baseline threshold.  │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                          [Autonomic Reset Pacer]
@@ -103,7 +104,7 @@ PitchPulse brings this mechanic to human physiology. During **Ghost Take**, Take
 ### 1. ⚡ Instant Pressure Moment Marking & Recovery Latency
 
 - Tap `Spacebar` or the on-screen HUD button the exact second stress peaks (e.g., tough audience question or complex slide transition).
-- PitchPulse anchors the timestamp, records baseline heart rate, and tracks **Recovery Latency**: the precise elapsed seconds until heart rate settles back to within $\pm 4\text{ BPM}$ of the pre-moment resting baseline.
+- PitchPulse anchors the timestamp, records baseline heart rate, and tracks **Recovery Latency**: estimates recovery latency using the elapsed time until pulse returns within the app's baseline threshold (within $\pm 4\text{ BPM}$ of pre-moment baseline).
 - If no measurable pulse response occurs, PitchPulse explicitly displays _"No measurable pressure moment captured"_ — **it never manufactures artificial stress peaks or fake recovery numbers.**
 
 ### 2. 👻 High-Fidelity Ghost Take Overlay
@@ -153,20 +154,20 @@ Soft, non-intrusive coaching cues surface directly over the camera feed only whe
 
 Biometric sensing in professional environments requires absolute transparency, privacy, and scientific modesty. PitchPulse adheres to four non-negotiable principles:
 
-| Principle                            | Technical Implementation                                                                                                                                                                                                                                                        |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Self-Relative, Not Normative**     | We never compare speakers to an arbitrary "standard human" or claim a high heart rate makes someone a "bad presenter." All scores and recovery deltas are relative strictly to the speaker's own pre-pitch baseline.                                                            |
-| **No Mind-Reading or Lie Detection** | Metrics are labeled with scientific humility (`Camera-Facing Gaze (Estimate)`, `Pulse Stability Index`). Facial tension is an optical muscle observation, not an emotion verdict.                                                                                               |
-| **Zero Fabricated Outcomes**         | When no pressure moment or pulse response occurs, PitchPulse never invents a flattering statistic. It displays _"No measurable pressure moment captured"_ to uphold data integrity.                                                                                             |
-| **Provenance Transparency**          | Live hardware runs display an emerald `[● Presage SmartSpectra SDK]` badge. Simulated sessions are hard-labeled with amber `[⚠️ DEMO DATA — NO LIVE SENSING]` banners. Ghost Take comparisons across modes feature an unmistakable `[Mixed Demo Comparison]` provenance tag.    |
-| **100% Air-Gapped Local Privacy**    | Video frames from `getUserMedia` remain in volatile memory. **No video frames or raw facial images ever touch persistent storage or leave the device.** Telemetry stays in local memory and local user storage (`pitchpulse_sessions/`). Zero third-party cloud LLM forwarding. |
-| **Telemetry Opt-Out**                | An explicit in-app toggle allows disabling all SDK diagnostic telemetry (`enableTelemetry: false`), guaranteeing zero network egress.                                                                                                                                           |
+| Principle                            | Technical Implementation                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Self-Relative, Not Normative**     | We never compare speakers to an arbitrary "standard human" or claim a high heart rate makes someone a "bad presenter." All scores and recovery deltas are relative strictly to the speaker's own pre-pitch baseline.                                                                                                                  |
+| **No Mind-Reading or Lie Detection** | Metrics are labeled with scientific humility (`Camera-Facing Gaze (Estimate)`, `Pulse Stability Index`). Facial tension is an optical muscle observation, not an emotion verdict.                                                                                                                                                     |
+| **Zero Fabricated Outcomes**         | When no pressure moment or pulse response occurs, PitchPulse never invents a flattering statistic. It displays _"No measurable pressure moment captured"_ to uphold data integrity.                                                                                                                                                   |
+| **Provenance Transparency**          | Live hardware runs display an emerald `[● Presage SmartSpectra SDK]` badge. Simulated sessions are hard-labeled with amber `[⚠️ DEMO DATA — NO LIVE SENSING]` banners. Ghost Take comparisons across modes feature an unmistakable `[Mixed Demo Comparison]` provenance tag.                                                          |
+| **Local Frame Handling**             | PitchPulse does not save camera video or facial images to disk. Frames are processed through the local Electron/SmartSpectra pipeline. The SmartSpectra SDK may require network access for authentication and model resources. Telemetry stays in local user storage (`pitchpulse_sessions/`). Zero third-party cloud LLM forwarding. |
+| **Telemetry Opt-Out**                | An explicit in-app toggle allows disabling all SDK diagnostic telemetry (`enableTelemetry: false`), disabling SDK diagnostic telemetry reporting.                                                                                                                                                                                     |
 
 ---
 
 ## 🏗️ System Architecture
 
-PitchPulse uses a zero-copy `MessagePort` bridge between Electron's Main Process (native C++ FFI via `koffi`) and the React Renderer, rendering high-frequency physiological waveforms on pure HTML5 `<canvas>` elements at 60 FPS without React reconciliation stutter.
+PitchPulse uses a MessagePort frame bridge between Electron's Main Process (native C++ FFI via `koffi`) and the React Renderer, rendering high-frequency physiological waveforms on pure HTML5 `<canvas>` elements at 60 FPS without React reconciliation stutter.
 
 ```mermaid
 flowchart TD
@@ -183,7 +184,7 @@ flowchart TD
     end
 
     subgraph Preload["Preload Context Bridge"]
-        BRIDGE["MessageChannel (Zero-Copy Port)"]
+        BRIDGE["MessageChannel (MessagePort Bridge)"]
         SAFE_API["pitchPulseAPI Secure Expose"]
     end
 
@@ -217,7 +218,7 @@ flowchart TD
 
 ---
 
-## 🔬 Model Card Compliance & Signal Math
+## 🔬 Model Documentation Compliance & Signal Math
 
 ### 1. Optical rPPG Settling Period
 
@@ -310,7 +311,7 @@ PitchPulse/
 │   └── cover.svg                     # Vector identity graphics
 ├── src/
 │   ├── main.js                       # Electron main process + SmartSpectra IPC binding + .env resolver
-│   ├── preload.js                    # Zero-copy MessagePort bridge + pitchPulseAPI contextBridge
+│   ├── preload.js                    # MessagePort frame bridge + pitchPulseAPI contextBridge
 │   └── renderer/
 │       ├── App.jsx                   # Root application state & view orchestrator
 │       ├── views/
@@ -343,10 +344,10 @@ PitchPulse/
 
 ## 🏆 Presage SmartSpectra SDK Challenge Alignment
 
-| Category                            | Why PitchPulse Competes at the Highest Tier                                                                                                                                                                                                                                                                                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Best Thoughtful Real-World Use**  | Public speaking anxiety affects 75%+ of the global workforce. Instead of building another invasive "stress spy" or generic telemetry dial, PitchPulse provides a private, 100% on-device, self-relative tool that turns recovery into a repeatable rehearsal loop. Video never leaves the machine; telemetry defaults to zero egress; measurements honor medical modesty. |
-| **Most Creative or Delightful Use** | Translates the beloved racing game "Ghost Car" mechanic into physiological self-mastery. Re-pitching against your own prior panic curve transforms abstract biometric numbers into an intuitive, empowering, and deeply satisfying skill-building game.                                                                                                                   |
+| Category                            | Why PitchPulse Competes at the Highest Tier                                                                                                                                                                                                                                                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Best Thoughtful Real-World Use**  | Public speaking anxiety is a widespread challenge in professional communication. Instead of building an invasive "stress spy" or generic telemetry dial, PitchPulse provides a private, self-relative rehearsal tool that turns recovery into a repeatable loop. Video is never saved or transmitted; telemetry defaults to off; measurements honor medical modesty. |
+| **Most Creative or Delightful Use** | Translates the beloved racing game "Ghost Car" mechanic into physiological self-mastery. Re-pitching against your own prior panic curve transforms abstract biometric numbers into an intuitive, empowering, and deeply satisfying skill-building game.                                                                                                              |
 
 ---
 
