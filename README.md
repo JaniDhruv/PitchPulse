@@ -32,16 +32,13 @@
 </p>
 
 ---
-
 ## 📹 Video Walkthrough
 
-Watch the complete unedited demonstration showing live **Presage SmartSpectra SDK** acquisition, real-time pressure marking, speech-gated respiratory stabilization, and the **Ghost Take** comparative recovery workflow:
+<a href="https://www.youtube.com/watch?v=-qHHrUmUZfs">
+  <img src="https://img.shields.io/badge/YouTube-Watch_Demo_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch on YouTube" />
+</a>
 
-<div align="center">
-  <a href="https://www.youtube.com/watch?v=-qHHrUmUZfs">
-    <img src="https://img.youtube.com/vi/-qHHrUmUZfs/maxresdefault.jpg" alt="Watch the PitchPulse demo on YouTube" width="720" />
-  </a>
-</div>
+Watch the complete unedited demonstration showing live **Presage SmartSpectra SDK** acquisition, real-time pressure marking, speech-gated respiratory stabilization, and the **Ghost Take** comparative recovery workflow:
 
 > _"This isn't judging your confidence or diagnosing anxiety. It is helping speakers privately rehearse their own recovery pattern across repeated takes."_
 
