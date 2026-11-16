@@ -15,8 +15,6 @@
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=-qHHrUmUZfs"><img src="https://img.shields.io/badge/▶_Watch_Demo_Video-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch Demo Video on YouTube" /></a>
-  &nbsp;
   <a href="https://dev.to/challenges/presage-2026-11-04"><img src="https://img.shields.io/badge/DEV_Challenge-Presage_SmartSpectra_SDK_Challenge-5539CC?style=for-the-badge&logo=devdotto&logoColor=white" alt="Presage SmartSpectra SDK Challenge" /></a>
   &nbsp;
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge" alt="License: Apache 2.0" /></a>
@@ -39,19 +37,11 @@
 
 Watch the complete unedited demonstration showing live **Presage SmartSpectra SDK** acquisition, real-time pressure marking, speech-gated respiratory stabilization, and the **Ghost Take** comparative recovery workflow:
 
-<p align="center">
-  <iframe width="720" height="405" src="https://www.youtube.com/embed/-qHHrUmUZfs" title="PitchPulse — Live Presage SmartSpectra SDK Walkthrough" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);"></iframe>
-</p>
-
-<p align="center">
+<div align="center">
   <a href="https://www.youtube.com/watch?v=-qHHrUmUZfs">
-    <img src="https://img.shields.io/badge/▶_Watch_Full_Demo_on_YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch Demo on YouTube" />
+    <img src="https://img.youtube.com/vi/-qHHrUmUZfs/maxresdefault.jpg" alt="Watch the PitchPulse demo on YouTube" width="720" />
   </a>
-</p>
-
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=-qHHrUmUZfs"><strong>🔗 Direct Link: https://www.youtube.com/watch?v=-qHHrUmUZfs</strong></a>
-</p>
+</div>
 
 > _"This isn't judging your confidence or diagnosing anxiety. It is helping speakers privately rehearse their own recovery pattern across repeated takes."_
 
